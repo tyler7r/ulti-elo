@@ -113,11 +113,18 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
         stabilizes, the change in ELO will not be as dramatic. Scroll Right for
         more Stats.
       </Typography>
-      <Paper sx={{ width: "100%", overflow: "hidden", marginTop: 2 }}>
+      <Paper
+        sx={{
+          maxWidth: "100%",
+          overflowX: "auto",
+          marginTop: 2,
+          width: "100%",
+          WebkitOverflowScrolling: "touch",
+        }}
+      >
         <TableContainer
           component={Paper}
-          className="max-w-full"
-          sx={{ maxHeight: 750 }}
+          sx={{ maxHeight: 750, minWidth: 600, width: "100%" }}
         >
           <Table stickyHeader>
             <TableHead>
@@ -128,19 +135,19 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
                     position: "sticky",
                     left: 0,
                     zIndex: 2,
-                    minWidth: 60,
+                    minWidth: 40,
                     fontWeight: "bold",
                   }}
                 >
-                  Rank
+                  #
                 </TableCell>
                 <TableCell
                   align="left"
                   sx={{
                     position: "sticky",
-                    left: 60,
+                    left: 40,
                     zIndex: 2,
-                    minWidth: "200px",
+                    minWidth: 160,
                     fontWeight: "bold",
                   }}
                 >
@@ -234,7 +241,7 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
                         background: theme.palette.background.paper,
                         fontWeight: "bold",
                         height: 60,
-                        minWidth: 60,
+                        minWidth: 40,
                       }}
                     >
                       {index + 1}
@@ -245,15 +252,15 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
                       sx={{
                         position: "sticky",
                         height: 60,
-                        left: 60,
+                        left: 40,
                         zIndex: 1,
                         background: theme.palette.background.paper,
                         display: "flex",
                         alignItems: "center",
                         gap: "8px",
-                        minWidth: 200,
+                        minWidth: 160,
                         whiteSpace: "nowrap",
-                        overflow: "hidden",
+                        overflow: "scroll",
                         textOverflow: "ellipsis",
                       }}
                     >
