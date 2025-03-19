@@ -18,6 +18,13 @@ export type PlayerType = {
   name: string;
   win_streak: number;
   loss_streak: number;
+  wins: number;
+  losses: number;
+  elo: number;
+  elo_change: number;
+  mu: number;
+  sigma: number;
+  win_percent: number;
 };
 
 export type PlayerTeamType = {
@@ -34,8 +41,25 @@ export type TeamType = {
   name: string;
 };
 
+export type PlayerSelectType = {
+  player_id: string;
+  players: PlayerType;
+};
+
 export type PlayerEloType = {
   id: string;
   name: string;
   elo: number;
+};
+
+export type SquadPlayersType = {
+  squads: {
+    id: string;
+    name: string;
+    active: boolean;
+  };
+  players: {
+    id: string;
+    name: string;
+  };
 };

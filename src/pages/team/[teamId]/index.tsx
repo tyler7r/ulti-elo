@@ -1,97 +1,304 @@
+import CreateSquad from "@/components/CreateSquad";
+import EditSquad from "@/components/EditSquad";
 import GameForm from "@/components/GameForm";
+import Leaderboard from "@/components/Leaderboard";
+import RetireSquad from "@/components/RetireSquad";
 import { supabase } from "@/lib/supabase";
-import { PlayerEloType, TeamType } from "@/lib/types";
-import { Button, CircularProgress } from "@mui/material";
+import { PlayerType, TeamType } from "@/lib/types";
+import { Box, Button, Tab, Tabs, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-export default function TeamPage() {
-  const [team, setTeam] = useState<TeamType>();
-  const [players, setPlayers] = useState<PlayerEloType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+interface SquadType {
+  id: string;
+  name: string;
+  players: PlayerType[]; // Array of players in the squad
+}
 
+const TeamHomePage = () => {
+  const [activeTab, setActiveTab] = useState(0); // For Tabs
+  const [team, setTeam] = useState<TeamType | null>(null);
+  const [activeSquads, setActiveSquads] = useState<SquadType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openSquadModal, setOpenSquadModal] = useState(false);
+  const [squadEditId, setSquadEditId] = useState<string | null>(null);
+  const [openEditSquadModal, setOpenEditSquadModal] = useState(false);
+  const [openRetireSquadModal, setRetireSquadModal] = useState(false);
+  const [openNewGameModal, setOpenNewGameModal] = useState(false);
   const router = useRouter();
   const teamId = router.query.teamId as string;
 
-  useEffect(() => {
-    const fetchTeamDetails = async () => {
-      if (!teamId) return;
-      const { data: teamData, error: teamError } = await supabase
-        .from("teams")
-        .select("*")
-        .eq("id", teamId)
-        .single();
+  const fetchTeam = async (teamId: string) => {
+    const { data, error } = await supabase
+      .from("teams")
+      .select()
+      .eq("id", teamId)
+      .single();
+    if (error) console.error("Error fetching team:", error.message);
 
-      if (teamError) {
-        console.error("Error fetching team:", teamError);
-        setError("Failed to load team.");
-        setLoading(false);
-        return;
-      }
+    setTeam(data);
+  };
 
-      setTeam(teamData);
+  const fetchActiveSquads = async (teamId: string) => {
+    // Fetch active squads and associated players from the squads_players table
+    const { data, error } = await supabase
+      .from("squad_players") // Join through the squads_players table
+      .select(
+        `
+        squads: squads!inner(
+          id,
+          name,
+          active,
+          team_id
+        ),
+        players: players!inner(
+          *
+        )
+      `
+      )
+      .eq("active", true) // Only fetch active players
+      .eq("squads.team_id", teamId) // Ensure we're filtering by the correct team
+      .eq("squads.active", true); // Only active squads
 
-      // Fetch players with Elo from player_teams table
-      const { data: playerTeamsData, error: playerTeamsError } = await supabase
-        .from("player_teams")
-        .select("players(id, name), elo")
-        .eq("team_id", teamId);
+    if (error) {
+      throw error;
+    }
 
-      if (playerTeamsError) {
-        console.error("Error fetching players:", playerTeamsError);
-        setError("Failed to load players.");
+    // Organize the data to structure squads with their associated players
+    console.log(data);
+    const squads = data.reduce<SquadType[]>((acc, row) => {
+      const { id, name } = row.squads;
+      const player = row.players;
+
+      // Add the player to the correct squad
+      const squadIndex = acc.findIndex((squad) => squad.id === id);
+      if (squadIndex > -1) {
+        acc[squadIndex].players.push(player);
       } else {
-        // Map the player_teams data to include player info with Elo
-        const playerDetails = playerTeamsData.map((item) => ({
-          id: item.players.id,
-          name: item.players.name,
-          elo: item.elo,
-        }));
-        setPlayers(playerDetails);
+        acc.push({
+          id,
+          name,
+          players: [player],
+        });
       }
+      return acc;
+    }, []);
 
-      setLoading(false);
-    };
+    setActiveSquads(squads);
+    setLoading(false);
+  };
 
-    fetchTeamDetails();
+  useEffect(() => {
+    if (teamId) {
+      void fetchTeam(teamId);
+      void fetchActiveSquads(teamId);
+    }
   }, [teamId]);
 
-  if (loading) {
-    return <CircularProgress />;
-  }
+  const handleSquadsUpdate = () => {
+    if (teamId) void fetchActiveSquads(teamId);
+    setOpenEditSquadModal(false);
+    setSquadEditId(null);
+    setOpenSquadModal(false);
+  };
 
-  if (error) {
-    return <p className="text-red-500">{error}</p>;
-  }
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    event.preventDefault();
+    setActiveTab(newValue);
+  };
+
+  const handleCreateSquad = () => {
+    setOpenSquadModal(true);
+  };
+
+  const handleNewGame = () => {
+    setOpenNewGameModal(true);
+  };
+
+  const handleClose = () => {
+    setOpenSquadModal(false);
+    setOpenEditSquadModal(false);
+    setOpenNewGameModal(false);
+    setSquadEditId(null);
+  };
+
+  const handleEditSquad = (squadId: string) => {
+    setSquadEditId(squadId);
+    setOpenEditSquadModal(true);
+  };
+
+  const handleRetireSquad = (squadId: string) => {
+    setSquadEditId(squadId);
+    setRetireSquadModal(true);
+  };
 
   return (
-    <div className="p-4 bg-white shadow-md rounded-lg max-w-lg">
-      <h1 className="text-2xl font-bold mb-4">{team?.name}</h1>
-      <GameForm teamId={teamId} />
-
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold">Players</h2>
-        {players.length === 0 ? (
-          <p>No players in this team</p>
-        ) : (
-          <ul>
-            {players.map((player) => (
-              <li key={player.id} className="mb-2">
-                {player.name} (ELO: {player.elo})
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => void router.push("/")}
+    <Box sx={{ width: "100%" }}>
+      <Tabs
+        value={activeTab}
+        onChange={handleTabChange}
+        aria-label="team tabs"
+        variant="fullWidth"
+        centered
       >
-        Back to Home
-      </Button>
-    </div>
+        <Tab label="Play" />
+        <Tab label="Leaderboard" />
+        <Tab label="History" />
+      </Tabs>
+
+      <Box sx={{ padding: 3 }}>
+        {activeTab === 0 && (
+          <Box display="flex" flexDirection="column" gap={4}>
+            <Box
+              display="flex"
+              flexDirection="column"
+              gap={2}
+              alignItems="center"
+            >
+              {team && (
+                <Typography textAlign="center" variant="h3" fontWeight="bold">
+                  {team.name}
+                </Typography>
+              )}
+              <Button
+                color="secondary"
+                variant="contained"
+                disabled={activeSquads.length < 2}
+                size="large"
+                onClick={handleNewGame}
+              >
+                Play New Game
+              </Button>
+              {activeSquads.length < 2 && (
+                <Box textAlign="center">
+                  <Typography color="error">
+                    You need at least 2 squads to play a game!
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+            <Box
+              display="flex"
+              flexDirection="column"
+              width="full"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Typography variant="h5" sx={{ fontWeight: "bold" }} gutterBottom>
+                Active Squads
+              </Typography>
+              <Button
+                variant="contained"
+                onClick={handleCreateSquad}
+                sx={{ marginBottom: 2 }}
+                size="small"
+              >
+                Create New Squad
+              </Button>
+              {loading ? (
+                <Typography>Loading squads...</Typography>
+              ) : (
+                <Box
+                  display="flex"
+                  width="full"
+                  alignItems="center"
+                  flexWrap="wrap"
+                  justifyContent="center"
+                  gap={4}
+                >
+                  {activeSquads.map((squad) => (
+                    <Box
+                      key={squad.id}
+                      sx={{ marginBottom: 2 }}
+                      display="flex"
+                      flexDirection="column"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <Typography variant="h6" fontWeight="bold">
+                        {squad.name}
+                      </Typography>
+                      {squad.players.length > 0 &&
+                        squad.players.map((p) => (
+                          <div key={p.id}>
+                            {p.name} (ELO: {p.elo})
+                          </div>
+                        ))}
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          variant="outlined"
+                          onClick={() => handleEditSquad(squad.id)}
+                          size="small"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          onClick={() => handleRetireSquad(squad.id)}
+                          size="small"
+                        >
+                          Retire
+                        </Button>
+                      </div>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+              {openNewGameModal && (
+                <GameForm
+                  teamId={teamId}
+                  onClose={handleClose}
+                  openNewGameModal={openNewGameModal}
+                />
+              )}
+              {/* CreateSquad Modal */}
+              {openSquadModal && (
+                <CreateSquad
+                  teamId={teamId}
+                  onClose={handleClose}
+                  openSquadModal={openSquadModal}
+                  updateSquads={handleSquadsUpdate}
+                />
+              )}
+              {openEditSquadModal && squadEditId && (
+                <EditSquad
+                  squadId={squadEditId}
+                  teamId={teamId}
+                  onClose={handleClose}
+                  openEditSquadModal={openEditSquadModal}
+                  updateSquads={handleSquadsUpdate}
+                />
+              )}
+              {openRetireSquadModal && squadEditId && (
+                <RetireSquad
+                  squadId={squadEditId}
+                  teamId={teamId}
+                  onClose={handleClose}
+                  openRetireSquadModal={openRetireSquadModal}
+                  updateSquads={handleSquadsUpdate}
+                />
+              )}
+            </Box>
+          </Box>
+        )}
+
+        {activeTab === 1 && (
+          <Box>
+            <Leaderboard teamId={teamId} />
+          </Box>
+        )}
+
+        {activeTab === 2 && (
+          <Box>
+            <Typography variant="h6">Game History</Typography>
+            <div>Feature Coming Soon...</div>
+            {/* Add Game History Component Here */}
+          </Box>
+        )}
+      </Box>
+    </Box>
   );
-}
+};
+
+export default TeamHomePage;

@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { PlayerType } from "@/lib/types";
 import CloseIcon from "@mui/icons-material/Close";
 import {
   Autocomplete,
@@ -13,31 +14,29 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 
-type CreatePlayerProps = {
+type CreateTeamProps = {
   onClose: () => void;
-  openPlayerModal: boolean;
+  openTeamModal: boolean;
 };
 
-const CreatePlayer = ({ onClose, openPlayerModal }: CreatePlayerProps) => {
+const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
   const [name, setName] = useState("");
-  const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
-  const [selectedTeams, setSelectedTeams] = useState<
-    { id: string; name: string }[]
-  >([]);
+  const [players, setPlayers] = useState<PlayerType[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<PlayerType[]>([]);
   const [loading, setLoading] = useState(false);
-  const [fetchingTeams, setFetchingTeams] = useState(true);
+  const [fetchingPlayers, setFetchingPlayers] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<boolean>(false);
 
   // Fetch teams from Supabase
   useEffect(() => {
-    const fetchTeams = async () => {
-      const { data, error } = await supabase.from("teams").select("*");
-      if (error) console.error("Error fetching teams:", error);
-      else setTeams(data);
-      setFetchingTeams(false);
+    const fetchPlayers = async () => {
+      const { data, error } = await supabase.from("players").select("*");
+      if (error) console.error("Error fetching players:", error);
+      else setPlayers(data);
+      setFetchingPlayers(false);
     };
-    fetchTeams();
+    fetchPlayers();
   }, []);
 
   // Handle form submission
@@ -48,24 +47,26 @@ const CreatePlayer = ({ onClose, openPlayerModal }: CreatePlayerProps) => {
     setSuccess(false);
 
     // Insert new player
-    const { data: player, error: playerError } = await supabase
-      .from("players")
+    const { data: team, error: teamError } = await supabase
+      .from("teams")
       .insert([{ name }])
       .select()
       .single();
 
-    if (playerError) {
+    if (teamError) {
       setError("Error creating player.");
-      console.error(playerError);
+      console.error(teamError);
       setLoading(false);
       return;
     }
 
+    const teamId = team.id;
+
     // Insert player-team relationships if teams were selected
-    if (selectedTeams.length > 0) {
-      const playerTeams = selectedTeams.map((team) => ({
-        player_id: player.id,
-        team_id: team.id,
+    if (selectedPlayers.length > 0) {
+      const playerTeams = selectedPlayers.map((p) => ({
+        player_id: p.id,
+        team_id: teamId,
       }));
 
       const { error: playerTeamsError } = await supabase
@@ -73,7 +74,7 @@ const CreatePlayer = ({ onClose, openPlayerModal }: CreatePlayerProps) => {
         .insert(playerTeams);
 
       if (playerTeamsError) {
-        setError("Error assigning teams.");
+        setError("Error assigning players.");
         console.error(playerTeamsError);
         setLoading(false);
         return;
@@ -81,20 +82,20 @@ const CreatePlayer = ({ onClose, openPlayerModal }: CreatePlayerProps) => {
     }
 
     setName("");
-    setSelectedTeams([]);
+    setSelectedPlayers([]);
     setSuccess(true);
     setLoading(false);
   };
 
   return (
     <Modal
-      open={openPlayerModal}
+      open={openTeamModal}
       onClose={onClose}
       closeAfterTransition
       slotProps={{ backdrop: { timeout: 500 } }}
       slots={{ backdrop: Backdrop }}
     >
-      <Fade in={openPlayerModal}>
+      <Fade in={openTeamModal}>
         <Box
           sx={{
             position: "absolute",
@@ -116,8 +117,8 @@ const CreatePlayer = ({ onClose, openPlayerModal }: CreatePlayerProps) => {
                 alignItems: "center",
               }}
             >
-              <Typography color="primary" variant="h5">
-                Create New Player
+              <Typography variant="h5" color="primary">
+                Create New Team
               </Typography>
               <IconButton
                 onClick={onClose}
@@ -129,55 +130,55 @@ const CreatePlayer = ({ onClose, openPlayerModal }: CreatePlayerProps) => {
 
             {error && (
               <Typography
-                color="error"
                 variant="overline"
                 sx={{ fontWeight: "bold" }}
+                color="error"
               >
                 {error}
               </Typography>
             )}
             {success && (
               <Typography
-                color="success"
                 variant="overline"
                 sx={{ fontWeight: "bold" }}
+                color="success"
               >
-                Player created successfully!
+                Team created successfully!
               </Typography>
             )}
 
             <form
               onSubmit={handleSubmit}
-              className="space-y-4 flex flex-col gap-4"
+              className="space-y-4 flex flex-col gap-2"
             >
-              {/* Player Name Input */}
+              {/* Team Name Input */}
               <TextField
                 fullWidth
-                label="Player Name"
+                label="Team Name"
                 variant="outlined"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
               />
 
-              {/* Multi-Select Dropdown for Teams */}
+              {/* Multi-Select Dropdown for Players */}
               <Autocomplete
                 multiple
-                options={teams}
+                options={players}
                 getOptionLabel={(option) => option.name}
-                value={selectedTeams}
-                onChange={(_, newValue) => setSelectedTeams(newValue)}
-                loading={fetchingTeams}
+                value={selectedPlayers}
+                onChange={(_, newValue) => setSelectedPlayers(newValue)}
+                loading={fetchingPlayers}
                 renderOption={(props, option) => (
                   <li {...props} key={option.id}>
-                    {option.name}
+                    {option.name} (Elo: {option.elo})
                   </li>
                 )}
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="Select Teams"
-                    placeholder="Choose teams"
+                    label="Select Players"
+                    placeholder="Choose players"
                   />
                 )}
               />
@@ -190,7 +191,7 @@ const CreatePlayer = ({ onClose, openPlayerModal }: CreatePlayerProps) => {
                 fullWidth
                 disabled={loading}
               >
-                {loading ? "Creating..." : "Create Player"}
+                {loading ? "Creating..." : "Create Team"}
               </Button>
             </form>
           </Box>
@@ -200,4 +201,4 @@ const CreatePlayer = ({ onClose, openPlayerModal }: CreatePlayerProps) => {
   );
 };
 
-export default CreatePlayer;
+export default CreateTeam;

@@ -17,6 +17,7 @@ export type Database = {
           is_winner: boolean
           player_id: string
           squad: string
+          squad_id: string
         }
         Insert: {
           elo_after?: number
@@ -25,6 +26,7 @@ export type Database = {
           is_winner?: boolean
           player_id?: string
           squad?: string
+          squad_id: string
         }
         Update: {
           elo_after?: number
@@ -33,6 +35,7 @@ export type Database = {
           is_winner?: boolean
           player_id?: string
           squad?: string
+          squad_id?: string
         }
         Relationships: [
           {
@@ -49,31 +52,58 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "game_players_squad_id_fkey"
+            columns: ["squad_id"]
+            isOneToOne: false
+            referencedRelation: "squads"
+            referencedColumns: ["id"]
+          },
         ]
       }
       games: {
         Row: {
           id: string
           match_date: string
+          squad_a_id: string
           squad_a_score: number
+          squad_b_id: string
           squad_b_score: number
           team_id: string
         }
         Insert: {
           id?: string
           match_date?: string
+          squad_a_id?: string
           squad_a_score?: number
+          squad_b_id?: string
           squad_b_score?: number
           team_id: string
         }
         Update: {
           id?: string
           match_date?: string
+          squad_a_id?: string
           squad_a_score?: number
+          squad_b_id?: string
           squad_b_score?: number
           team_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "games_squad_a_id_fkey"
+            columns: ["squad_a_id"]
+            isOneToOne: false
+            referencedRelation: "squads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_squad_b_id_fkey"
+            columns: ["squad_b_id"]
+            isOneToOne: false
+            referencedRelation: "squads"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "games_team_id_fkey"
             columns: ["team_id"]
@@ -85,27 +115,15 @@ export type Database = {
       }
       player_teams: {
         Row: {
-          elo: number
-          elo_change: number
-          mu: number
           player_id: string
-          sigma: number
           team_id: string
         }
         Insert: {
-          elo?: number
-          elo_change?: number
-          mu?: number
           player_id: string
-          sigma?: number
           team_id: string
         }
         Update: {
-          elo?: number
-          elo_change?: number
-          mu?: number
           player_id?: string
-          sigma?: number
           team_id?: string
         }
         Relationships: [
@@ -127,24 +145,107 @@ export type Database = {
       }
       players: {
         Row: {
+          elo: number
+          elo_change: number
           id: string
           loss_streak: number
+          losses: number
+          mu: number
           name: string
+          sigma: number
+          win_percent: number
           win_streak: number
+          wins: number
         }
         Insert: {
+          elo?: number
+          elo_change?: number
           id?: string
           loss_streak?: number
+          losses?: number
+          mu?: number
           name: string
+          sigma?: number
+          win_percent?: number
           win_streak?: number
+          wins?: number
         }
         Update: {
+          elo?: number
+          elo_change?: number
           id?: string
           loss_streak?: number
+          losses?: number
+          mu?: number
           name?: string
+          sigma?: number
+          win_percent?: number
           win_streak?: number
+          wins?: number
         }
         Relationships: []
+      }
+      squad_players: {
+        Row: {
+          active: boolean
+          player_id: string
+          squad_id: string
+        }
+        Insert: {
+          active?: boolean
+          player_id?: string
+          squad_id?: string
+        }
+        Update: {
+          active?: boolean
+          player_id?: string
+          squad_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "squad_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "squad_players_squad_id_fkey"
+            columns: ["squad_id"]
+            isOneToOne: false
+            referencedRelation: "squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      squads: {
+        Row: {
+          active: boolean
+          id: string
+          name: string
+          team_id: string
+        }
+        Insert: {
+          active?: boolean
+          id?: string
+          name: string
+          team_id?: string
+        }
+        Update: {
+          active?: boolean
+          id?: string
+          name?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "squads_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       teams: {
         Row: {

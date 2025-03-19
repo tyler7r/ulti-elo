@@ -24,7 +24,7 @@ export async function updateElo(
     // Fetch player ratings for Squad A
     const { data: playersA, error: errorA } = await supabase
       .from("player_teams")
-      .select("player_id, mu, sigma, elo, elo_change")
+      .select("player_id, players(mu, sigma, elo, elo_change)")
       .in("player_id", squadA)
       .eq("team_id", teamId);
 
@@ -33,7 +33,7 @@ export async function updateElo(
     // Fetch player ratings for Squad B
     const { data: playersB, error: errorB } = await supabase
       .from("player_teams")
-      .select("player_id, mu, sigma, elo, elo_change")
+      .select("player_id, players(mu, sigma, elo, elo_change)")
       .in("player_id", squadB)
       .eq("team_id", teamId);
 
@@ -41,18 +41,18 @@ export async function updateElo(
 
     const parsedPlayersA: PlayerRating[] = playersA.map((p) => ({
       player_id: p.player_id,
-      mu: Number(p.mu),
-      sigma: Number(p.sigma),
-      elo: Number(p.elo),
-      elo_change: Number(p.elo_change),
+      mu: Number(p.players.mu),
+      sigma: Number(p.players.sigma),
+      elo: Number(p.players.elo),
+      elo_change: Number(p.players.elo_change),
     }));
 
     const parsedPlayersB: PlayerRating[] = playersB.map((p) => ({
       player_id: p.player_id,
-      mu: Number(p.mu),
-      sigma: Number(p.sigma),
-      elo: Number(p.elo),
-      elo_change: Number(p.elo_change),
+      mu: Number(p.players.mu),
+      sigma: Number(p.players.sigma),
+      elo: Number(p.players.elo),
+      elo_change: Number(p.players.elo_change),
     }));
 
     const teamA: Rating[] = parsedPlayersA.map(
@@ -110,15 +110,14 @@ export async function updateElo(
         return Promise.all([
           // Update player_teams table with new ratings
           supabase
-            .from("player_teams")
+            .from("players")
             .update({
               mu: newMu,
               sigma: newSigma,
               elo: newElo,
               elo_change: eloChange,
             })
-            .eq("player_id", p.player_id)
-            .eq("team_id", teamId),
+            .eq("id", p.player_id),
           // Update game_players table with elo_before and elo_after
           supabase
             .from("game_players")
@@ -145,15 +144,14 @@ export async function updateElo(
         return Promise.all([
           // Update player_teams table with new ratings
           supabase
-            .from("player_teams")
+            .from("players")
             .update({
               mu: newMu,
               sigma: newSigma,
               elo: newElo,
               elo_change: eloChange,
             })
-            .eq("player_id", p.player_id)
-            .eq("team_id", teamId),
+            .eq("id", p.player_id),
           // Update game_players table with elo_before and elo_after
           supabase
             .from("game_players")

@@ -1,11 +1,16 @@
 import { supabase } from "@/lib/supabase";
 import { GameType } from "@/lib/types";
 import { submitGame } from "@/pages/api/submitGame";
+import CloseIcon from "@mui/icons-material/Close";
 import {
   Autocomplete,
+  Backdrop,
   Box,
   Button,
+  Fade,
   FormControl,
+  IconButton,
+  Modal,
   TextField,
   Typography,
 } from "@mui/material";
@@ -14,23 +19,20 @@ import { useEffect, useState } from "react";
 
 type GameFormType = {
   teamId: string;
+  onClose: () => void;
+  openNewGameModal: boolean;
 };
 
-type PlayerSelectType = {
-  player_id: string;
-  elo: number;
-  players: {
-    id: string;
-    loss_streak: number;
-    name: string;
-    win_streak: number;
-  };
+type SquadType = {
+  id: string;
+  name: string;
+  players: { id: string; name: string; elo: number }[];
 };
 
-const GameForm = ({ teamId }: GameFormType) => {
-  const [players, setPlayers] = useState<PlayerSelectType[]>([]);
-  const [squadA, setSquadA] = useState<PlayerSelectType[]>([]);
-  const [squadB, setSquadB] = useState<PlayerSelectType[]>([]);
+const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
+  const [squads, setSquads] = useState<SquadType[]>([]);
+  const [squadA, setSquadA] = useState<SquadType | null>(null);
+  const [squadB, setSquadB] = useState<SquadType | null>(null);
   const [formData, setFormData] = useState<GameType>({
     id: "",
     team_id: teamId,
@@ -38,23 +40,45 @@ const GameForm = ({ teamId }: GameFormType) => {
     squad_a_score: 0,
     squad_b_score: 0,
   });
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [disabled, setDisabled] = useState<boolean>(false);
+
   const router = useRouter();
 
   useEffect(() => {
-    const fetchPlayers = async () => {
+    const fetchSquads = async () => {
       const { data, error } = await supabase
-        .from("player_teams")
-        .select("player_id, elo, players(*)")
-        .eq("team_id", teamId);
+        .from("squads")
+        .select("id, name, squad_players(player_id, players(name, elo))")
+        .eq("team_id", teamId)
+        .eq("active", true);
+
       if (error) {
-        console.error("Error fetching players:", error);
-        return [];
-      } else {
-        setPlayers(data);
+        console.error("Error fetching squads", error);
+        return;
       }
+      const formattedSquads = data.map((squad) => ({
+        id: squad.id,
+        name: squad.name,
+        players: squad.squad_players.map((sp) => ({
+          id: sp.player_id,
+          name: sp.players.name,
+          elo: sp.players.elo,
+        })),
+      }));
+      setSquads(formattedSquads);
     };
-    fetchPlayers();
+    fetchSquads();
   }, [teamId]);
+
+  useEffect(() => {
+    const { squad_a_score, squad_b_score } = formData;
+    const totalScore = squad_a_score + squad_b_score;
+    if (!squadA || !squadB || totalScore <= 0) {
+      setDisabled(true);
+    } else setDisabled(false);
+  }, [formData, squadA, squadB]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -66,68 +90,51 @@ const GameForm = ({ teamId }: GameFormType) => {
     }));
   };
 
-  const handlePlayerSelect = (
-    newPlayers: PlayerSelectType[],
-    squad: "A" | "B"
-  ) => {
-    setFormData((prev) => {
-      const updatedFormData = { ...prev };
-      if (squad === "A") {
-        setSquadA(newPlayers);
-        // Remove selected players from Squad B
-        setSquadB(
-          squadB.filter(
-            (player) =>
-              !newPlayers.some((p) => p.player_id === player.player_id)
-          )
-        );
-      } else {
-        setSquadB(newPlayers);
-        // Remove selected players from Squad A
-        setSquadA(
-          squadA.filter(
-            (player) =>
-              !newPlayers.some((p) => p.player_id === player.player_id)
-          )
-        );
-      }
-      return updatedFormData;
-    });
-  };
-
-  const determineWinner = () => {
+  const determineWinner = (squadA: SquadType, squadB: SquadType) => {
     if (formData.squad_a_score > formData.squad_b_score)
-      return squadA.map((player) => player.player_id);
+      return squadA.players.map((player) => player.id);
     if (formData.squad_b_score > formData.squad_a_score)
-      return squadB.map((player) => player.player_id);
+      return squadB.players.map((player) => player.id);
     return []; // No winner in case of a tie
   };
 
   const updateWinLossStreaks = async (playerId: string, isWinner: boolean) => {
     const { data: playerData, error } = await supabase
-      .from("player_teams")
-      .select("elo, players(win_streak, loss_streak)")
-      .eq("player_id", playerId)
+      .from("players")
+      .select()
+      .eq("id", playerId)
       .single();
     if (error) {
       console.log("Error fetching player Elo:", error);
       return;
     }
 
-    let newWinStreak = playerData.players.win_streak;
-    let newLossStreak = playerData.players.loss_streak;
+    let newWinStreak = playerData.win_streak;
+    let newLossStreak = playerData.loss_streak;
+    let wins = playerData.wins;
+    let losses = playerData.losses;
 
     if (isWinner) {
       newWinStreak += 1;
       newLossStreak = 0; // Reset loss streak
+      wins += 1;
     } else {
       newLossStreak += 1;
       newWinStreak = 0; // Reset win streak
+      losses += 1;
     }
+
+    const newWinPercent = wins / (wins + losses);
 
     const { error: updateError } = await supabase
       .from("players")
-      .update({ win_streak: newWinStreak, loss_streak: newLossStreak })
+      .update({
+        win_streak: newWinStreak,
+        loss_streak: newLossStreak,
+        win_percent: newWinPercent,
+        losses,
+        wins,
+      })
       .eq("id", playerId);
 
     if (updateError) {
@@ -138,138 +145,197 @@ const GameForm = ({ teamId }: GameFormType) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const winnerIds = determineWinner();
-
-    for (const player of squadA.concat(squadB)) {
-      const isWinner = winnerIds.includes(player.player_id);
-      await updateWinLossStreaks(player.player_id, isWinner);
+    if (!squadA || !squadB) {
+      setError("Please select both squads!");
+      return;
     }
 
-    const squadAIDs = squadA.map((player) => player.player_id);
-    const squadBIDs = squadB.map((player) => player.player_id);
+    const winnerIds = determineWinner(squadA, squadB);
+
+    const squadAPlayers = squadA.players;
+    const squadBPlayers = squadB.players;
+
+    for (const player of squadAPlayers.concat(squadBPlayers)) {
+      const isWinner = winnerIds.includes(player.id);
+      await updateWinLossStreaks(player.id, isWinner);
+    }
+
+    const squadAID = squadA.id;
+    const squadBID = squadB.id;
+    const squadAIDs = squadAPlayers.map((player) => player.id);
+    const squadBIDs = squadBPlayers.map((player) => player.id);
     const scoreA = formData.squad_a_score;
     const scoreB = formData.squad_b_score;
     const success = await submitGame({
       teamId,
+      squadAID,
+      squadBID,
       squadAIDs,
       squadBIDs,
       scoreA,
       scoreB,
     });
     if (success) {
+      setSuccess("Game Recorded!");
       void router.push(`/games/${success}`);
     } else {
-      alert("Error submitting game.");
+      setError("Error submitting game.");
     }
   };
 
   return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit}
-      sx={{ maxWidth: 600, mx: "auto", p: 2 }}
+    <Modal
+      open={openNewGameModal}
+      onClose={onClose}
+      closeAfterTransition
+      slotProps={{ backdrop: { timeout: 500 } }}
+      slots={{ backdrop: Backdrop }}
     >
-      <Typography variant="h5" mb={2}>
-        Create a New Game
-      </Typography>
+      <Fade in={openNewGameModal}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: { xs: "90%", md: "500px" },
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            p: 4,
+            borderRadius: 2,
+          }}
+        >
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Typography variant="h5" color="primary">
+                New Game
+              </Typography>
+              <IconButton
+                onClick={onClose}
+                sx={{ position: "absolute", top: 10, right: 10 }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </Box>
+            {error && (
+              <Typography
+                variant="overline"
+                sx={{ fontWeight: "bold" }}
+                color="error"
+              >
+                {error}
+              </Typography>
+            )}
+            {success && (
+              <Typography
+                variant="overline"
+                sx={{ fontWeight: "bold" }}
+                color="success"
+              >
+                {success}
+              </Typography>
+            )}
+            {error && <div className="font-bold text-red-500">{error}</div>}
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4">
+                {/* Squad A Selection */}
+                <div>
+                  <FormControl fullWidth>
+                    <Autocomplete
+                      options={squads.filter((s) => s.id !== squadB?.id)} // Exclude Squad B
+                      getOptionLabel={(option) => option.name}
+                      renderOption={(props, option) => (
+                        <li
+                          {...props}
+                          key={option.id}
+                          className="text-xs cursor-pointer mb-1 px-2"
+                        >
+                          <strong className="text-sm">{option.name}:</strong>
+                          {option.players.map((p) => (
+                            <div key={p.id}>
+                              {p.name} (ELO: {p.elo})
+                            </div>
+                          ))}
+                        </li>
+                      )}
+                      value={squadA}
+                      onChange={(_, newValue) => setSquadA(newValue)}
+                      renderInput={(params) => (
+                        <TextField {...params} label="Select Squad A" />
+                      )}
+                    />
+                  </FormControl>
+                </div>
 
-      <div className="flex flex-col gap-4">
-        {/* Squad A Player Selection */}
-        <div>
-          <FormControl fullWidth>
-            <Autocomplete
-              multiple
-              options={players.filter(
-                (player) =>
-                  !squadA.some((p) => p.player_id === player.player_id) &&
-                  !squadB.some((p) => p.player_id === player.player_id)
-              )}
-              getOptionLabel={(option) => `${option.players.name}`} // Display only name
-              value={squadA}
-              onChange={(_, newValue) => handlePlayerSelect(newValue, "A")}
-              isOptionEqualToValue={(option, value) =>
-                option.player_id === value.player_id
-              }
-              renderOption={(props, option) => (
-                <li {...props} key={option.player_id}>
-                  {option.players.name} (ELO: {option.elo})
-                </li>
-              )}
-              renderInput={(params) => (
+                {/* Squad B Selection */}
+                <div>
+                  <FormControl fullWidth>
+                    <Autocomplete
+                      options={squads.filter((s) => s.id !== squadA?.id)} // Exclude Squad A
+                      getOptionLabel={(option) => option.name}
+                      renderOption={(props, option) => (
+                        <li
+                          {...props}
+                          key={option.id}
+                          className="text-xs cursor-pointer mb-1 px-2"
+                        >
+                          <strong className="text-sm">{option.name}:</strong>
+                          {option.players.map((p) => (
+                            <div key={p.id}>
+                              {p.name} (ELO: {p.elo})
+                            </div>
+                          ))}
+                        </li>
+                      )}
+                      value={squadB}
+                      onChange={(_, newValue) => setSquadB(newValue)}
+                      renderInput={(params) => (
+                        <TextField {...params} label="Select Squad B" />
+                      )}
+                    />
+                  </FormControl>
+                </div>
+              </div>
+              {/* Scores */}
+              <div className="flex w-full gap-2">
                 <TextField
-                  {...params}
-                  label="Select Players for Squad A"
-                  placeholder="Choose players"
+                  fullWidth
+                  margin="normal"
+                  label="Squad A Score"
+                  type="number"
+                  name="squad_a_score"
+                  onChange={handleInputChange}
                 />
-              )}
-            />
-          </FormControl>
-        </div>
-
-        {/* Squad B Player Selection */}
-        <div>
-          <FormControl fullWidth>
-            <Autocomplete
-              multiple
-              options={players.filter(
-                (player) =>
-                  !squadA.some((p) => p.player_id === player.player_id) &&
-                  !squadB.some((p) => p.player_id === player.player_id)
-              )}
-              getOptionLabel={(option) => `${option.players.name}`} // Display only name
-              value={squadB}
-              onChange={(_, newValue) => handlePlayerSelect(newValue, "B")}
-              isOptionEqualToValue={(option, value) =>
-                option.player_id === value.player_id
-              }
-              renderOption={(props, option) => (
-                <li {...props} key={option.player_id}>
-                  {option.players.name} (ELO: {option.elo})
-                </li>
-              )}
-              renderInput={(params) => (
                 <TextField
-                  {...params}
-                  label="Select Players for Squad B"
-                  placeholder="Choose players"
+                  fullWidth
+                  margin="normal"
+                  label="Squad B Score"
+                  type="number"
+                  name="squad_b_score"
+                  onChange={handleInputChange}
                 />
-              )}
-            />
-          </FormControl>
-        </div>
-      </div>
-
-      {/* Scores */}
-      <div className="flex w-full gap-2">
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Squad A Score"
-          type="number"
-          name="squad_a_score"
-          onChange={handleInputChange}
-        />
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Squad B Score"
-          type="number"
-          name="squad_b_score"
-          onChange={handleInputChange}
-        />
-      </div>
-
-      {/* Submit Button */}
-      <Button
-        type="submit"
-        variant="contained"
-        color="primary"
-        fullWidth
-        sx={{ mt: 2 }}
-      >
-        Save Game
-      </Button>
-    </Box>
+              </div>
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                fullWidth
+                disabled={disabled}
+              >
+                Submit Game
+              </Button>
+            </form>
+          </Box>
+        </Box>
+        {/* </Box> */}
+      </Fade>
+    </Modal>
   );
 };
 
