@@ -51,7 +51,6 @@ const Game = () => {
         .eq("game_id", gameId);
       if (gameDets) {
         setGameDetails(gameDets);
-        console.log(gameDets);
       }
       if (gameDetailsError)
         console.error("Failed to fetch game history:", gameDetailsError);

@@ -64,8 +64,6 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
 
       const { data, error } = await query;
 
-      console.log("run");
-
       if (error) {
         console.error("Error fetching players:", error);
       } else {

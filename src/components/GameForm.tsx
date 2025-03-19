@@ -105,7 +105,7 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
       .eq("id", playerId)
       .single();
     if (error) {
-      console.log("Error fetching player Elo:", error);
+      console.error("Error fetching player Elo:", error);
       return;
     }
 

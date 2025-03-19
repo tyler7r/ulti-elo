@@ -65,7 +65,6 @@ const TeamHomePage = () => {
     }
 
     // Organize the data to structure squads with their associated players
-    console.log(data);
     const squads = data.reduce<SquadType[]>((acc, row) => {
       const { id, name } = row.squads;
       const player = row.players;
