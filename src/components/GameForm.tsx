@@ -124,7 +124,7 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
       losses += 1;
     }
 
-    const newWinPercent = wins / (wins + losses);
+    const newWinPercent = Number(((wins / (wins + losses)) * 100).toFixed(2));
 
     const { error: updateError } = await supabase
       .from("players")
