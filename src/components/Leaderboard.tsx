@@ -98,16 +98,22 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
       {teamName ? (
         <Typography
           variant="h5"
-          sx={{ fontWeight: "bold", marginBottom: 2, textAlign: "center" }}
+          sx={{ fontWeight: "bold", textAlign: "center" }}
         >
           {teamName} Leaderboard
         </Typography>
       ) : (
-        <Typography variant="h5" sx={{ fontWeight: "bold", marginBottom: 2 }}>
+        <Typography variant="h5" sx={{ fontWeight: "bold" }}>
           Global Leaderboard
         </Typography>
       )}
-      <Paper sx={{ width: "100%", overflow: "hidden" }}>
+      <Typography variant="caption" color="secondary" fontWeight="bold">
+        Note: Think of your first 10-15 games as placement games. Your ELO will
+        probably be shifting around a lot during these games. As the algorithm
+        stabilizes, the change in ELO will not be as dramatic. Scroll Right for
+        more Stats.
+      </Typography>
+      <Paper sx={{ width: "100%", overflow: "hidden", marginTop: 2 }}>
         <TableContainer
           component={Paper}
           className="max-w-full"

@@ -243,65 +243,67 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
             )}
             {error && <div className="font-bold text-red-500">{error}</div>}
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-4">
-                {/* Squad A Selection */}
-                <div>
-                  <FormControl fullWidth>
-                    <Autocomplete
-                      options={squads.filter((s) => s.id !== squadB?.id)} // Exclude Squad B
-                      getOptionLabel={(option) => option.name}
-                      renderOption={(props, option) => (
-                        <li
-                          {...props}
-                          key={option.id}
-                          className="text-xs cursor-pointer mb-1 px-2"
-                        >
-                          <strong className="text-sm">{option.name}:</strong>
-                          {option.players.map((p) => (
-                            <div key={p.id}>
-                              {p.name} (ELO: {p.elo})
-                            </div>
-                          ))}
-                        </li>
-                      )}
-                      value={squadA}
-                      onChange={(_, newValue) => setSquadA(newValue)}
-                      renderInput={(params) => (
-                        <TextField {...params} label="Select Squad A" />
-                      )}
-                    />
-                  </FormControl>
-                </div>
+              {squads.length > 0 && (
+                <div className="flex flex-col gap-4">
+                  {/* Squad A Selection */}
+                  <div>
+                    <FormControl fullWidth>
+                      <Autocomplete
+                        options={squads.filter((s) => s.id !== squadB?.id)} // Exclude Squad B
+                        getOptionLabel={(option) => option.name}
+                        renderOption={(props, option) => (
+                          <li
+                            {...props}
+                            key={option.id}
+                            className="text-xs cursor-pointer mb-1 px-2"
+                          >
+                            <strong className="text-sm">{option.name}:</strong>
+                            {option.players.map((p) => (
+                              <div key={p.id}>
+                                {p.name} (ELO: {p.elo})
+                              </div>
+                            ))}
+                          </li>
+                        )}
+                        value={squadA}
+                        onChange={(_, newValue) => setSquadA(newValue)}
+                        renderInput={(params) => (
+                          <TextField {...params} label="Select Squad A" />
+                        )}
+                      />
+                    </FormControl>
+                  </div>
 
-                {/* Squad B Selection */}
-                <div>
-                  <FormControl fullWidth>
-                    <Autocomplete
-                      options={squads.filter((s) => s.id !== squadA?.id)} // Exclude Squad A
-                      getOptionLabel={(option) => option.name}
-                      renderOption={(props, option) => (
-                        <li
-                          {...props}
-                          key={option.id}
-                          className="text-xs cursor-pointer mb-1 px-2"
-                        >
-                          <strong className="text-sm">{option.name}:</strong>
-                          {option.players.map((p) => (
-                            <div key={p.id}>
-                              {p.name} (ELO: {p.elo})
-                            </div>
-                          ))}
-                        </li>
-                      )}
-                      value={squadB}
-                      onChange={(_, newValue) => setSquadB(newValue)}
-                      renderInput={(params) => (
-                        <TextField {...params} label="Select Squad B" />
-                      )}
-                    />
-                  </FormControl>
+                  {/* Squad B Selection */}
+                  <div>
+                    <FormControl fullWidth>
+                      <Autocomplete
+                        options={squads.filter((s) => s.id !== squadA?.id)} // Exclude Squad A
+                        getOptionLabel={(option) => option.name}
+                        renderOption={(props, option) => (
+                          <li
+                            {...props}
+                            key={option.id}
+                            className="text-xs cursor-pointer mb-1 px-2"
+                          >
+                            <strong className="text-sm">{option.name}:</strong>
+                            {option.players.map((p) => (
+                              <div key={p.id}>
+                                {p.name} (ELO: {p.elo})
+                              </div>
+                            ))}
+                          </li>
+                        )}
+                        value={squadB}
+                        onChange={(_, newValue) => setSquadB(newValue)}
+                        renderInput={(params) => (
+                          <TextField {...params} label="Select Squad B" />
+                        )}
+                      />
+                    </FormControl>
+                  </div>
                 </div>
-              </div>
+              )}
               {/* Scores */}
               <div className="flex w-full gap-2">
                 <TextField
