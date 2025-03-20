@@ -108,10 +108,9 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
         </Typography>
       )}
       <Typography variant="caption" color="secondary" fontWeight="bold">
-        Note: Think of your first 10-15 games as placement games. Your ELO will
-        probably be shifting around a lot during these games. As the algorithm
-        stabilizes, the change in ELO will not be as dramatic. Scroll Right for
-        more Stats.
+        Note: Think of your first 10-15 games as your placement games, you will
+        likely see large ELO jumps with each game but as you play more this
+        measure will start to stabilize. Scroll right for more stats!
       </Typography>
       <Paper
         sx={{

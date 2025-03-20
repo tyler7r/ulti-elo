@@ -14,6 +14,7 @@ import { useRouter } from "next/router";
 import React, { useState } from "react";
 import CreatePlayer from "./CreatePlayer";
 import CreateTeam from "./CreateTeam";
+import InfoModal from "./InfoModal";
 
 type HeaderProps = {
   toggleTheme: () => void;
@@ -55,49 +56,55 @@ const Header = ({ toggleTheme, isDarkMode }: HeaderProps) => {
       <AppBar position="sticky" color="default">
         <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
           {/* Logo / Title */}
-          <Typography
-            component="span"
-            onClick={() => void router.push("/")}
-            variant="h6"
-            sx={{ flexGrow: 1, fontWeight: "bold", cursor: "pointer" }}
-          >
-            Ulti ELO
-          </Typography>
+          <div className="flex items-center justify-center gap-2">
+            <Typography
+              component="span"
+              onClick={() => void router.push("/")}
+              variant="h6"
+              sx={{ flexGrow: 1, fontWeight: "bold", cursor: "pointer" }}
+            >
+              Ulti ELO
+            </Typography>
+            <InfoModal />
+          </div>
 
           {/* Plus Icon Button */}
-          <Box>
-            <IconButton
-              onClick={handleMenuClick}
-              color="inherit"
-              aria-controls="plus-menu"
-              aria-haspopup="true"
-              size="small"
-            >
-              <AddIcon fontSize="large" />
+          <div className="flex gap-2 items-center justify-center">
+            <Box>
+              <IconButton
+                onClick={handleMenuClick}
+                color="inherit"
+                aria-controls="plus-menu"
+                aria-haspopup="true"
+                size="small"
+              >
+                <AddIcon fontSize="large" />
+              </IconButton>
+              {/* Menu */}
+              <Menu
+                id="plus-menu"
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleClose}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
+              >
+                <MenuItem onClick={openCreatePlayerModal}>
+                  Create New Player
+                </MenuItem>
+                <MenuItem onClick={openCreateTeamModal}>
+                  Create New Team
+                </MenuItem>
+              </Menu>
+            </Box>
+            <IconButton onClick={toggleTheme} size="small">
+              {isDarkMode ? (
+                <LightModeIcon color="primary" fontSize="large" />
+              ) : (
+                <DarkModeIcon color="primary" fontSize="large" />
+              )}
             </IconButton>
-
-            {/* Menu */}
-            <Menu
-              id="plus-menu"
-              anchorEl={anchorEl}
-              open={open}
-              onClose={handleClose}
-              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-              transformOrigin={{ vertical: "top", horizontal: "right" }}
-            >
-              <MenuItem onClick={openCreatePlayerModal}>
-                Create New Player
-              </MenuItem>
-              <MenuItem onClick={openCreateTeamModal}>Create New Team</MenuItem>
-            </Menu>
-          </Box>
-          <IconButton onClick={toggleTheme} size="small">
-            {isDarkMode ? (
-              <LightModeIcon color="primary" fontSize="large" />
-            ) : (
-              <DarkModeIcon color="primary" fontSize="large" />
-            )}
-          </IconButton>
+          </div>
         </Toolbar>
       </AppBar>
       <CreatePlayer onClose={closeModal} openPlayerModal={openPlayerModal} />
