@@ -187,17 +187,14 @@ export type Database = {
       }
       squad_players: {
         Row: {
-          active: boolean
           player_id: string
           squad_id: string
         }
         Insert: {
-          active?: boolean
           player_id?: string
           squad_id?: string
         }
         Update: {
-          active?: boolean
           player_id?: string
           squad_id?: string
         }

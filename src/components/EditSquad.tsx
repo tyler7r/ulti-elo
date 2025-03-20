@@ -26,9 +26,9 @@ type EditSquadProps = {
 const fetchAvailablePlayers = async (teamId: string, squadId: string) => {
   const { data: activePlayers, error: activeError } = await supabase
     .from("squad_players")
-    .select("player_id")
-    .eq("active", true)
-    .eq("squad_id", squadId);
+    .select("player_id, squads!inner(active)")
+    .eq("squad_id", squadId)
+    .eq("squads.active", true);
 
   if (activeError) throw activeError;
 
@@ -62,10 +62,13 @@ const EditSquad = ({
   const [selectedPlayers, setSelectedPlayers] = useState<PlayerSelectType[]>(
     []
   );
+  const [initialPlayers, setInitialPlayers] = useState<PlayerSelectType[]>([]);
   const [squadName, setSquadName] = useState("");
+  const [initialSquadName, setInitialSquadName] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [disabled, setDisabled] = useState<boolean>(false);
 
   useEffect(() => {
     const getPlayers = async () => {
@@ -84,19 +87,20 @@ const EditSquad = ({
       }
 
       setSquadName(squadData?.name || "");
+      setInitialSquadName(squadData?.name || "");
 
       // Fetch players associated with the squad
       const { data: squadPlayers, error: squadPlayersError } = await supabase
         .from("squad_players")
         .select("player_id, players!inner(*)")
-        .eq("squad_id", squadId)
-        .eq("active", true);
+        .eq("squad_id", squadId);
       if (squadPlayersError) {
         console.error("Error fetching squad players:", squadPlayersError);
         return;
       }
 
       // Set the selected players
+      setInitialPlayers(squadPlayers);
       setSelectedPlayers(squadPlayers);
     };
 
@@ -104,6 +108,23 @@ const EditSquad = ({
       getPlayers();
     }
   }, [teamId, squadId]);
+
+  useEffect(() => {
+    const initialPlayerIDs = JSON.stringify(
+      initialPlayers.map((p) => p.player_id)
+    );
+    const selectedPlayerIDs = JSON.stringify(
+      selectedPlayers.map((p) => p.player_id)
+    );
+    const sameSquadPlayers = initialPlayerIDs === selectedPlayerIDs;
+    const sameSquadName = initialSquadName === squadName;
+
+    if ((sameSquadPlayers && sameSquadName) || loading) {
+      setDisabled(true);
+    } else {
+      setDisabled(false);
+    }
+  }, [loading, initialPlayers, initialSquadName, squadName, selectedPlayers]);
 
   const handlePlayerSelect = (newPlayers: PlayerSelectType[]) => {
     setSelectedPlayers(newPlayers);
@@ -130,7 +151,6 @@ const EditSquad = ({
         ...selectedPlayers.map((player) => ({
           player_id: player.player_id,
           squad_id: squadId,
-          active: true,
         })),
       ];
       await supabase.from("squad_players").insert(squadPlayers);
@@ -138,7 +158,9 @@ const EditSquad = ({
       setSuccess(`${squadName} successfully updated!`);
       setLoading(false);
       setSquadName("");
+      setInitialSquadName("");
       setSelectedPlayers([]);
+      setInitialPlayers([]);
       updateSquads();
     } catch (error) {
       console.error("Error updating squad:", error);
@@ -241,6 +263,7 @@ const EditSquad = ({
                 label="Squad Name"
                 variant="outlined"
                 fullWidth
+                required
               />
               <FormControl fullWidth sx={{ marginTop: 1 }}>
                 <Autocomplete
@@ -278,11 +301,12 @@ const EditSquad = ({
                 variant="contained"
                 color="primary"
                 fullWidth
-                disabled={loading}
+                disabled={disabled}
               >
                 {loading ? "Saving..." : "Save Squad"}
               </Button>
               <Button
+                type="button"
                 variant="outlined"
                 color="error"
                 fullWidth

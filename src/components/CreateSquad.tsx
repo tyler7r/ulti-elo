@@ -25,8 +25,8 @@ type CreateSquadProps = {
 const fetchAvailablePlayers = async (teamId: string) => {
   const { data: activePlayers, error: activeError } = await supabase
     .from("squad_players")
-    .select("player_id")
-    .eq("active", true)
+    .select("player_id, squads!inner(active)")
+    .eq("squads.active", true)
     .in(
       "squad_id",
       (
@@ -37,6 +37,8 @@ const fetchAvailablePlayers = async (teamId: string) => {
   if (activeError) throw activeError;
 
   const activePlayerIds = activePlayers.map((p) => p.player_id);
+
+  console.log(activePlayers);
 
   let query = supabase
     .from("player_teams")
@@ -100,7 +102,6 @@ const CreateSquad = ({
         ...selectedPlayers.map((player) => ({
           player_id: player.player_id,
           squad_id: squadId,
-          active: true,
         })),
       ];
       await supabase.from("squad_players").insert(squadPlayers);
@@ -196,6 +197,7 @@ const CreateSquad = ({
                 label="Squad Name"
                 variant="outlined"
                 fullWidth
+                required
                 sx={{ marginBottom: 2 }}
               />
               <FormControl fullWidth>

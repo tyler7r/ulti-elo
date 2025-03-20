@@ -22,6 +22,7 @@ const TeamHomePage = () => {
   const [loading, setLoading] = useState(true);
   const [openSquadModal, setOpenSquadModal] = useState(false);
   const [squadEditId, setSquadEditId] = useState<string | null>(null);
+  const [squadRetireId, setSquadRetireId] = useState<string | null>(null);
   const [openEditSquadModal, setOpenEditSquadModal] = useState(false);
   const [openRetireSquadModal, setRetireSquadModal] = useState(false);
   const [openNewGameModal, setOpenNewGameModal] = useState(false);
@@ -56,7 +57,6 @@ const TeamHomePage = () => {
         )
       `
       )
-      .eq("active", true) // Only fetch active players
       .eq("squads.team_id", teamId) // Ensure we're filtering by the correct team
       .eq("squads.active", true); // Only active squads
 
@@ -99,6 +99,8 @@ const TeamHomePage = () => {
     setOpenEditSquadModal(false);
     setSquadEditId(null);
     setOpenSquadModal(false);
+    setRetireSquadModal(false);
+    setSquadRetireId(null);
   };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -119,15 +121,26 @@ const TeamHomePage = () => {
     setOpenEditSquadModal(false);
     setOpenNewGameModal(false);
     setSquadEditId(null);
+    setSquadRetireId(null);
   };
 
-  const handleEditSquad = (squadId: string) => {
+  const handleEditSquad = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    squadId: string
+  ) => {
+    e.stopPropagation();
     setSquadEditId(squadId);
+    setSquadRetireId(null);
     setOpenEditSquadModal(true);
   };
 
-  const handleRetireSquad = (squadId: string) => {
-    setSquadEditId(squadId);
+  const handleRetireSquad = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    squadId: string
+  ) => {
+    e.stopPropagation();
+    setSquadRetireId(squadId);
+    setSquadEditId(null);
     setRetireSquadModal(true);
   };
 
@@ -226,7 +239,7 @@ const TeamHomePage = () => {
                       <div className="flex gap-2 mt-2">
                         <Button
                           variant="outlined"
-                          onClick={() => handleEditSquad(squad.id)}
+                          onClick={(e) => handleEditSquad(e, squad.id)}
                           size="small"
                         >
                           Edit
@@ -234,7 +247,7 @@ const TeamHomePage = () => {
                         <Button
                           variant="outlined"
                           color="error"
-                          onClick={() => handleRetireSquad(squad.id)}
+                          onClick={(e) => handleRetireSquad(e, squad.id)}
                           size="small"
                         >
                           Retire
@@ -269,9 +282,9 @@ const TeamHomePage = () => {
                   updateSquads={handleSquadsUpdate}
                 />
               )}
-              {openRetireSquadModal && squadEditId && (
+              {openRetireSquadModal && squadRetireId && (
                 <RetireSquad
-                  squadId={squadEditId}
+                  squadId={squadRetireId}
                   teamId={teamId}
                   onClose={handleClose}
                   openRetireSquadModal={openRetireSquadModal}
