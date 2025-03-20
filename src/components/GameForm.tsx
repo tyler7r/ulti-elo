@@ -309,15 +309,21 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
                 <TextField
                   fullWidth
                   margin="normal"
-                  label="Squad A Score"
+                  label={`${
+                    squadA?.name ? `${squadA.name} Score` : "Squad B Score"
+                  }`}
                   type="number"
                   name="squad_a_score"
                   onChange={handleInputChange}
+                  required
                 />
                 <TextField
+                  required
                   fullWidth
                   margin="normal"
-                  label="Squad B Score"
+                  label={`${
+                    squadB?.name ? `${squadB.name} Score` : "Squad B Score"
+                  }`}
                   type="number"
                   name="squad_b_score"
                   onChange={handleInputChange}
