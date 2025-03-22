@@ -58,7 +58,8 @@ const TeamHomePage = () => {
       `
       )
       .eq("squads.team_id", teamId) // Ensure we're filtering by the correct team
-      .eq("squads.active", true); // Only active squads
+      .eq("squads.active", true) // Only active squads
+      .eq("active", true);
 
     if (error) {
       throw error;
@@ -158,7 +159,7 @@ const TeamHomePage = () => {
         <Tab label="History" />
       </Tabs>
 
-      <Box sx={{ padding: 3 }}>
+      <Box>
         {activeTab === 0 && (
           <Box display="flex" flexDirection="column" gap={4}>
             <Box
@@ -304,8 +305,8 @@ const TeamHomePage = () => {
         {activeTab === 2 && (
           <Box>
             <Typography variant="h6">Game History</Typography>
-            <div>Feature Coming Soon...</div>
             {/* Add Game History Component Here */}
+            {/* <GameHistory teamId={teamId} /> */}
           </Box>
         )}
       </Box>

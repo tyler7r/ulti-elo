@@ -23,12 +23,18 @@ type EditSquadProps = {
   updateSquads: () => void;
 };
 
-const fetchAvailablePlayers = async (teamId: string, squadId: string) => {
+const fetchAvailablePlayers = async (teamId: string) => {
   const { data: activePlayers, error: activeError } = await supabase
     .from("squad_players")
     .select("player_id, squads!inner(active)")
-    .eq("squad_id", squadId)
-    .eq("squads.active", true);
+    .eq("squads.active", true)
+    .eq("active", true)
+    .in(
+      "squad_id",
+      (
+        await supabase.from("squads").select("id").eq("team_id", teamId)
+      ).data?.map((s) => s.id) || []
+    );
 
   if (activeError) throw activeError;
 
@@ -72,7 +78,7 @@ const EditSquad = ({
 
   useEffect(() => {
     const getPlayers = async () => {
-      const ps = await fetchAvailablePlayers(teamId, squadId);
+      const ps = await fetchAvailablePlayers(teamId);
       setPlayers(ps);
 
       // Fetch existing squad details
@@ -86,14 +92,15 @@ const EditSquad = ({
         return;
       }
 
-      setSquadName(squadData?.name || "");
-      setInitialSquadName(squadData?.name || "");
+      setSquadName(squadData.name || "");
+      setInitialSquadName(squadData.name || "");
 
       // Fetch players associated with the squad
       const { data: squadPlayers, error: squadPlayersError } = await supabase
         .from("squad_players")
         .select("player_id, players!inner(*)")
-        .eq("squad_id", squadId);
+        .eq("squad_id", squadId)
+        .eq("active", true);
       if (squadPlayersError) {
         console.error("Error fetching squad players:", squadPlayersError);
         return;
@@ -135,8 +142,9 @@ const EditSquad = ({
     setLoading(true);
     setError("");
     setSuccess("");
+
     try {
-      // Update squad details
+      // Update squad details (name)
       const { error: updateError } = await supabase
         .from("squads")
         .update({ name: squadName })
@@ -144,23 +152,46 @@ const EditSquad = ({
 
       if (updateError) throw updateError;
 
-      // Update squad players
-      await supabase.from("squad_players").delete().eq("squad_id", squadId);
+      // Identify players to add, keep, and remove
+      const currentPlayerIds = initialPlayers.map((p) => p.player_id);
+      const newPlayerIds = selectedPlayers.map((p) => p.player_id);
 
-      const squadPlayers = [
-        ...selectedPlayers.map((player) => ({
+      const playersToAdd = selectedPlayers.filter(
+        (p) => !currentPlayerIds.includes(p.player_id)
+      );
+      const playersToRemove = initialPlayers.filter(
+        (p) => !newPlayerIds.includes(p.player_id)
+      );
+
+      // 🟢 Add new players with first and last game numbers
+      if (playersToAdd.length > 0) {
+        const newSquadPlayers = playersToAdd.map((player) => ({
           player_id: player.player_id,
           squad_id: squadId,
-        })),
-      ];
-      await supabase.from("squad_players").insert(squadPlayers);
+        }));
+
+        const { error: addError } = await supabase
+          .from("squad_players")
+          .insert(newSquadPlayers);
+
+        if (addError) throw addError;
+      }
+
+      // 🔴 Remove players by updating their last_game number
+      if (playersToRemove.length > 0) {
+        for (const player of playersToRemove) {
+          const { error: removeError } = await supabase
+            .from("squad_players")
+            .update({ active: false })
+            .eq("squad_id", squadId)
+            .eq("player_id", player.player_id);
+
+          if (removeError) throw removeError;
+        }
+      }
 
       setSuccess(`${squadName} successfully updated!`);
       setLoading(false);
-      setSquadName("");
-      setInitialSquadName("");
-      setSelectedPlayers([]);
-      setInitialPlayers([]);
       updateSquads();
     } catch (error) {
       console.error("Error updating squad:", error);

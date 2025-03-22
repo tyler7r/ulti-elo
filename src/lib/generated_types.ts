@@ -16,7 +16,6 @@ export type Database = {
           game_id: string
           is_winner: boolean
           player_id: string
-          squad: string
           squad_id: string
         }
         Insert: {
@@ -25,7 +24,6 @@ export type Database = {
           game_id?: string
           is_winner?: boolean
           player_id?: string
-          squad?: string
           squad_id: string
         }
         Update: {
@@ -34,7 +32,6 @@ export type Database = {
           game_id?: string
           is_winner?: boolean
           player_id?: string
-          squad?: string
           squad_id?: string
         }
         Relationships: [
@@ -187,14 +184,17 @@ export type Database = {
       }
       squad_players: {
         Row: {
+          active: boolean
           player_id: string
           squad_id: string
         }
         Insert: {
+          active?: boolean
           player_id?: string
           squad_id?: string
         }
         Update: {
+          active?: boolean
           player_id?: string
           squad_id?: string
         }

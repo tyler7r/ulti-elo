@@ -1,35 +1,24 @@
 import { supabase } from "@/lib/supabase";
+import { GameFormSquadType } from "@/lib/types";
 import { updateElo } from "./updateElo";
 
 type submitGameProps = {
   teamId: string;
-  squadAID: string;
-  squadBID: string;
-  squadAIDs: string[];
-  squadBIDs: string[];
-  scoreA: number;
-  scoreB: number;
+  sqA: GameFormSquadType;
+  sqB: GameFormSquadType;
 };
 
-export async function submitGame({
-  teamId,
-  squadAID,
-  squadBID,
-  squadAIDs,
-  squadBIDs,
-  scoreA,
-  scoreB,
-}: submitGameProps) {
+export async function submitGame({ teamId, sqA, sqB }: submitGameProps) {
   try {
     const { data: game, error } = await supabase
       .from("games")
       .insert([
         {
           team_id: teamId,
-          squad_a_score: scoreA,
-          squad_b_score: scoreB,
-          squad_a_id: squadAID,
-          squad_b_id: squadBID,
+          squad_a_score: sqA.score,
+          squad_b_score: sqB.score,
+          squad_a_id: sqA.id,
+          squad_b_id: sqB.id,
         },
       ])
       .select("id")
@@ -40,27 +29,25 @@ export async function submitGame({
     const gameId = game.id;
 
     // Insert players into game_players
-    const allPlayers = [
-      ...squadAIDs.map((player) => ({
-        squad_id: squadAID,
+    const allGamePlayers = [
+      ...sqA.players.map((player) => ({
+        squad_id: sqA.id,
         game_id: gameId,
-        player_id: player,
-        squad: "A",
-        is_winner: scoreA > scoreB,
+        player_id: player.id,
+        is_winner: sqA.score > sqB.score,
       })),
-      ...squadBIDs.map((player) => ({
-        squad_id: squadBID,
+      ...sqB.players.map((player) => ({
+        squad_id: sqB.id,
         game_id: gameId,
-        player_id: player,
-        squad: "B",
-        is_winner: scoreB > scoreA,
+        player_id: player.id,
+        is_winner: sqB.score > sqA.score,
       })),
     ];
 
-    await supabase.from("game_players").insert(allPlayers);
+    await supabase.from("game_players").insert(allGamePlayers);
 
     // Update Elo ratings
-    await updateElo(gameId, squadAIDs, squadBIDs, scoreA, scoreB, teamId);
+    await updateElo(gameId, sqA, sqB, teamId);
 
     return gameId;
   } catch (error) {

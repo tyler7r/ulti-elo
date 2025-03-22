@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { GameType } from "@/lib/types";
+import { GameFormSquadType, GameType } from "@/lib/types";
 import { submitGame } from "@/pages/api/submitGame";
 import CloseIcon from "@mui/icons-material/Close";
 import {
@@ -23,26 +23,23 @@ type GameFormType = {
   openNewGameModal: boolean;
 };
 
-type SquadType = {
-  id: string;
-  name: string;
-  players: { id: string; name: string; elo: number }[];
-};
-
 const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
-  const [squads, setSquads] = useState<SquadType[]>([]);
-  const [squadA, setSquadA] = useState<SquadType | null>(null);
-  const [squadB, setSquadB] = useState<SquadType | null>(null);
+  const [squads, setSquads] = useState<GameFormSquadType[]>([]);
+  const [squadA, setSquadA] = useState<GameFormSquadType | null>(null);
+  const [squadB, setSquadB] = useState<GameFormSquadType | null>(null);
   const [formData, setFormData] = useState<GameType>({
     id: "",
     team_id: teamId,
     match_date: new Date().toDateString(),
     squad_a_score: 0,
     squad_b_score: 0,
+    squad_a_id: squadA?.id || "",
+    squad_b_id: squadB?.id || "",
   });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [disabled, setDisabled] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const router = useRouter();
 
@@ -50,9 +47,12 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
     const fetchSquads = async () => {
       const { data, error } = await supabase
         .from("squads")
-        .select("id, name, squad_players(player_id, players(name, elo))")
+        .select(
+          "id, name, squad_players(player_id, active, players(name, elo))"
+        )
         .eq("team_id", teamId)
-        .eq("active", true);
+        .eq("active", true)
+        .eq("squad_players.active", true);
 
       if (error) {
         console.error("Error fetching squads", error);
@@ -61,6 +61,7 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
       const formattedSquads = data.map((squad) => ({
         id: squad.id,
         name: squad.name,
+        score: 0,
         players: squad.squad_players.map((sp) => ({
           id: sp.player_id,
           name: sp.players.name,
@@ -70,15 +71,15 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
       setSquads(formattedSquads);
     };
     fetchSquads();
-  }, [teamId]);
+  }, [teamId, openNewGameModal]);
 
   useEffect(() => {
     const { squad_a_score, squad_b_score } = formData;
     const totalScore = squad_a_score + squad_b_score;
-    if (!squadA || !squadB || totalScore <= 0) {
+    if (!squadA || !squadB || totalScore <= 0 || loading) {
       setDisabled(true);
     } else setDisabled(false);
-  }, [formData, squadA, squadB]);
+  }, [formData, squadA, squadB, loading]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -90,7 +91,10 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
     }));
   };
 
-  const determineWinner = (squadA: SquadType, squadB: SquadType) => {
+  const determineWinner = (
+    squadA: GameFormSquadType,
+    squadB: GameFormSquadType
+  ) => {
     if (formData.squad_a_score > formData.squad_b_score)
       return squadA.players.map((player) => player.id);
     if (formData.squad_b_score > formData.squad_a_score)
@@ -144,6 +148,7 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
     if (!squadA || !squadB) {
       setError("Please select both squads!");
@@ -160,20 +165,24 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
       await updateWinLossStreaks(player.id, isWinner);
     }
 
-    const squadAID = squadA.id;
-    const squadBID = squadB.id;
-    const squadAIDs = squadAPlayers.map((player) => player.id);
-    const squadBIDs = squadBPlayers.map((player) => player.id);
     const scoreA = formData.squad_a_score;
     const scoreB = formData.squad_b_score;
+    const sqA = {
+      id: squadA.id,
+      name: squadA.name,
+      players: squadAPlayers,
+      score: scoreA,
+    };
+    const sqB = {
+      id: squadB.id,
+      name: squadB.name,
+      players: squadBPlayers,
+      score: scoreB,
+    };
     const success = await submitGame({
       teamId,
-      squadAID,
-      squadBID,
-      squadAIDs,
-      squadBIDs,
-      scoreA,
-      scoreB,
+      sqA,
+      sqB,
     });
     if (success) {
       setSuccess("Game Recorded!");
@@ -181,6 +190,7 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
     } else {
       setError("Error submitting game.");
     }
+    setLoading(false);
   };
 
   return (
@@ -336,7 +346,7 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
                 fullWidth
                 disabled={disabled}
               >
-                Submit Game
+                {loading ? "Loading..." : "Submit Game"}
               </Button>
             </form>
           </Box>

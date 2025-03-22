@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { GameFormSquadType } from "@/lib/types";
 import { rate, Rating } from "ts-trueskill";
 
 interface PlayerRating {
@@ -14,18 +15,18 @@ const UNDERDOG_SCALING_FACTOR = 0.15;
 
 export async function updateElo(
   gameId: string,
-  squadA: string[],
-  squadB: string[],
-  scoreA: number,
-  scoreB: number,
+  sqA: GameFormSquadType,
+  sqB: GameFormSquadType,
   teamId: string
 ): Promise<void> {
   try {
+    const squadAPlayerIDs = sqA.players.map((p) => p.id);
+    const squadBPlayerIDs = sqB.players.map((p) => p.id);
     // Fetch player ratings for Squad A
     const { data: playersA, error: errorA } = await supabase
       .from("player_teams")
       .select("player_id, players(mu, sigma, elo, elo_change)")
-      .in("player_id", squadA)
+      .in("player_id", squadAPlayerIDs)
       .eq("team_id", teamId);
 
     if (errorA || !playersA) throw new Error("Failed to fetch Squad A ratings");
@@ -34,7 +35,7 @@ export async function updateElo(
     const { data: playersB, error: errorB } = await supabase
       .from("player_teams")
       .select("player_id, players(mu, sigma, elo, elo_change)")
-      .in("player_id", squadB)
+      .in("player_id", squadBPlayerIDs)
       .eq("team_id", teamId);
 
     if (errorB || !playersB) throw new Error("Failed to fetch Squad B ratings");
@@ -62,7 +63,7 @@ export async function updateElo(
       (p) => new Rating(p.mu, p.sigma)
     );
 
-    const ranks: number[] = scoreA > scoreB ? [0, 1] : [1, 0];
+    const ranks: number[] = sqA.score > sqB.score ? [0, 1] : [1, 0];
 
     const newRatings: Rating[][] = rate([teamA, teamB], ranks);
 
@@ -73,9 +74,10 @@ export async function updateElo(
     const [newRatingsA, newRatingsB] = newRatings;
 
     // **Score influence**
-    const score_margin = Math.abs(scoreA - scoreB);
-    const total_score = scoreA + scoreB;
+    const score_margin = Math.abs(sqA.score - sqB.score);
+    const total_score = sqA.score + sqB.score;
     const score_ratio = total_score > 0 ? score_margin / total_score : 0;
+    const scoreInfluence = 1 + SCORE_SCALING_FACTOR * Math.sqrt(score_ratio);
 
     // **Calculate team average ELO**
     const avgEloA =
@@ -88,7 +90,6 @@ export async function updateElo(
     const expectedOutcome = 1 / (1 + Math.pow(10, -ratingDifference / 400));
 
     //Blended Elo influence factors
-    const scoreInfluence = 1 + SCORE_SCALING_FACTOR * score_ratio;
     const underdogInfluence =
       1 + (1 - expectedOutcome) * UNDERDOG_SCALING_FACTOR;
 
@@ -98,7 +99,7 @@ export async function updateElo(
         const newSigma = newRatingsA[i].sigma;
         const baseEloChange = (newMu - p.mu) * 100;
 
-        const isWinner = scoreA > scoreB;
+        const isWinner = sqA.score > sqB.score;
 
         const eloChange = isWinner
           ? Math.round(baseEloChange * scoreInfluence * underdogInfluence)
@@ -132,7 +133,7 @@ export async function updateElo(
 
         const baseEloChange = (newMu - p.mu) * 100;
 
-        const isWinner = scoreB > scoreA;
+        const isWinner = sqB.score > sqB.score;
 
         const eloChange = isWinner
           ? Math.round(baseEloChange * scoreInfluence * underdogInfluence)

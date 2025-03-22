@@ -27,6 +27,7 @@ const fetchAvailablePlayers = async (teamId: string) => {
     .from("squad_players")
     .select("player_id, squads!inner(active)")
     .eq("squads.active", true)
+    .eq("active", true)
     .in(
       "squad_id",
       (
@@ -37,8 +38,6 @@ const fetchAvailablePlayers = async (teamId: string) => {
   if (activeError) throw activeError;
 
   const activePlayerIds = activePlayers.map((p) => p.player_id);
-
-  console.log(activePlayers);
 
   let query = supabase
     .from("player_teams")
