@@ -1,6 +1,7 @@
 import CreateSquad from "@/components/CreateSquad";
 import EditSquad from "@/components/EditSquad";
 import GameForm from "@/components/GameForm";
+import GameHistory from "@/components/GameHistory";
 import Leaderboard from "@/components/Leaderboard";
 import RetireSquad from "@/components/RetireSquad";
 import { supabase } from "@/lib/supabase";
@@ -304,9 +305,8 @@ const TeamHomePage = () => {
 
         {activeTab === 2 && (
           <Box>
-            <Typography variant="h6">Game History</Typography>
             {/* Add Game History Component Here */}
-            {/* <GameHistory teamId={teamId} /> */}
+            <GameHistory teamId={teamId} />
           </Box>
         )}
       </Box>
