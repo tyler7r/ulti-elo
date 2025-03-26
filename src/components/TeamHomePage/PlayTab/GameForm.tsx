@@ -1,8 +1,16 @@
+import { getOverlappingPlayers } from "@/lib/getOverlappingPlayers";
 import { supabase } from "@/lib/supabase";
-import { GameFormSquadType, GameType } from "@/lib/types";
+import {
+  AlertType,
+  GameFormSquadType,
+  GameType,
+  PlayerEloType,
+} from "@/lib/types";
+import { updatePlayerStats } from "@/lib/updatePlayerStats";
 import { submitGame } from "@/pages/api/submitGame";
 import CloseIcon from "@mui/icons-material/Close";
 import {
+  Alert,
   Autocomplete,
   Backdrop,
   Box,
@@ -16,17 +24,27 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import OverlappingPlayers from "./OverlappingPlayers";
 
 type GameFormType = {
   teamId: string;
   onClose: () => void;
   openNewGameModal: boolean;
+  updateSquads: () => void;
 };
 
-const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
+const GameForm = ({
+  teamId,
+  onClose,
+  openNewGameModal,
+  updateSquads,
+}: GameFormType) => {
   const [squads, setSquads] = useState<GameFormSquadType[]>([]);
   const [squadA, setSquadA] = useState<GameFormSquadType | null>(null);
   const [squadB, setSquadB] = useState<GameFormSquadType | null>(null);
+  const [overlappingPlayers, setOverlappingPlayers] = useState<PlayerEloType[]>(
+    []
+  );
   const [formData, setFormData] = useState<GameType>({
     id: "",
     team_id: teamId,
@@ -36,8 +54,10 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
     squad_a_id: squadA?.id || "",
     squad_b_id: squadB?.id || "",
   });
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [alert, setAlert] = useState<AlertType>({
+    message: null,
+    severity: "error",
+  });
   const [disabled, setDisabled] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -71,15 +91,21 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
       setSquads(formattedSquads);
     };
     fetchSquads();
-  }, [teamId, openNewGameModal]);
+  }, [teamId, openNewGameModal, overlappingPlayers]);
 
   useEffect(() => {
     const { squad_a_score, squad_b_score } = formData;
     const totalScore = squad_a_score + squad_b_score;
-    if (!squadA || !squadB || totalScore <= 0 || loading) {
+    const overlap = overlappingPlayers.length > 0;
+    if (!squadA || !squadB || totalScore <= 0 || loading || overlap) {
       setDisabled(true);
     } else setDisabled(false);
-  }, [formData, squadA, squadB, loading]);
+  }, [formData, squadA, squadB, loading, overlappingPlayers]);
+
+  useEffect(() => {
+    const overlapping = getOverlappingPlayers(squadA, squadB);
+    setOverlappingPlayers(overlapping);
+  }, [squadA, squadB]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -102,56 +128,21 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
     return []; // No winner in case of a tie
   };
 
-  const updateWinLossStreaks = async (playerId: string, isWinner: boolean) => {
-    const { data: playerData, error } = await supabase
-      .from("players")
-      .select()
-      .eq("id", playerId)
-      .single();
-    if (error) {
-      console.error("Error fetching player Elo:", error);
-      return;
-    }
-
-    let newWinStreak = playerData.win_streak;
-    let newLossStreak = playerData.loss_streak;
-    let wins = playerData.wins;
-    let losses = playerData.losses;
-
-    if (isWinner) {
-      newWinStreak += 1;
-      newLossStreak = 0; // Reset loss streak
-      wins += 1;
-    } else {
-      newLossStreak += 1;
-      newWinStreak = 0; // Reset win streak
-      losses += 1;
-    }
-
-    const newWinPercent = Number(((wins / (wins + losses)) * 100).toFixed(2));
-
-    const { error: updateError } = await supabase
-      .from("players")
-      .update({
-        win_streak: newWinStreak,
-        loss_streak: newLossStreak,
-        win_percent: newWinPercent,
-        losses,
-        wins,
-      })
-      .eq("id", playerId);
-
-    if (updateError) {
-      console.error("Error updating streak:", updateError);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     if (!squadA || !squadB) {
-      setError("Please select both squads!");
+      setAlert({ message: "Please select both squads!", severity: "error" });
+      return;
+    }
+
+    if (overlappingPlayers.length > 0) {
+      setAlert({
+        message: "Squads have overlapping players. Please resolve them first.",
+        severity: "error",
+      });
+      setLoading(false);
       return;
     }
 
@@ -162,7 +153,7 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
 
     for (const player of squadAPlayers.concat(squadBPlayers)) {
       const isWinner = winnerIds.includes(player.id);
-      await updateWinLossStreaks(player.id, isWinner);
+      await updatePlayerStats(player.id, isWinner);
     }
 
     const scoreA = formData.squad_a_score;
@@ -185,10 +176,10 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
       sqB,
     });
     if (success) {
-      setSuccess("Game Recorded!");
+      setAlert({ message: "Game Recorded!", severity: "success" });
       void router.push(`/games/${success}`);
     } else {
-      setError("Error submitting game.");
+      setAlert({ message: "Error submitting game.", severity: "error" });
     }
     setLoading(false);
   };
@@ -200,6 +191,7 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
       closeAfterTransition
       slotProps={{ backdrop: { timeout: 500 } }}
       slots={{ backdrop: Backdrop }}
+      sx={{ overflow: "scroll" }}
     >
       <Fade in={openNewGameModal}>
         <Box
@@ -213,6 +205,8 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
             boxShadow: 24,
             p: 4,
             borderRadius: 2,
+            overflow: "scroll",
+            maxHeight: "80vh",
           }}
         >
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -233,26 +227,7 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
                 <CloseIcon />
               </IconButton>
             </Box>
-            {error && (
-              <Typography
-                variant="overline"
-                sx={{ fontWeight: "bold" }}
-                color="error"
-              >
-                {error}
-              </Typography>
-            )}
-            {success && (
-              <Typography
-                variant="overline"
-                sx={{ fontWeight: "bold" }}
-                color="success"
-              >
-                {success}
-              </Typography>
-            )}
-            {error && <div className="font-bold text-red-500">{error}</div>}
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <form onSubmit={handleSubmit} className="flex flex-col">
               {squads.length > 0 && (
                 <div className="flex flex-col gap-4">
                   {/* Squad A Selection */}
@@ -339,6 +314,22 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
                   onChange={handleInputChange}
                 />
               </div>
+              {overlappingPlayers.length > 0 && squadA && squadB && (
+                <OverlappingPlayers
+                  squadA={squadA}
+                  squadB={squadB}
+                  setAlert={setAlert}
+                  setSquadA={setSquadA}
+                  setSquadB={setSquadB}
+                  updateSquads={updateSquads}
+                  overlappingPlayers={overlappingPlayers}
+                />
+              )}
+              {alert.message && (
+                <Alert severity={alert.severity} sx={{ fontWeight: "bold" }}>
+                  {alert.message}
+                </Alert>
+              )}
               <Button
                 type="submit"
                 variant="contained"
@@ -351,7 +342,6 @@ const GameForm = ({ teamId, onClose, openNewGameModal }: GameFormType) => {
             </form>
           </Box>
         </Box>
-        {/* </Box> */}
       </Fade>
     </Modal>
   );

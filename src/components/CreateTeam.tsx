@@ -138,6 +138,8 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
             boxShadow: 24,
             p: 4,
             borderRadius: 2,
+            overflow: "scroll",
+            maxHeight: "80vh",
           }}
         >
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>

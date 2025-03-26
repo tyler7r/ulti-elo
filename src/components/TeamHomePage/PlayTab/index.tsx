@@ -217,6 +217,7 @@ const PlayTab = ({ team }: PlayTabType) => {
             teamId={team.id}
             onClose={handleClose}
             openNewGameModal={openNewGameModal}
+            updateSquads={handleSquadsUpdate}
           />
         )}
         {/* CreateSquad Modal */}

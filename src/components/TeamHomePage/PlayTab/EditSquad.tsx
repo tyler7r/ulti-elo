@@ -24,29 +24,10 @@ type EditSquadProps = {
 };
 
 const fetchAvailablePlayers = async (teamId: string) => {
-  const { data: activePlayers, error: activeError } = await supabase
-    .from("squad_players")
-    .select("player_id, squads!inner(active)")
-    .eq("squads.active", true)
-    .eq("active", true)
-    .in(
-      "squad_id",
-      (
-        await supabase.from("squads").select("id").eq("team_id", teamId)
-      ).data?.map((s) => s.id) || []
-    );
-
-  if (activeError) throw activeError;
-
-  const activePlayerIds = activePlayers.map((p) => p.player_id);
-
-  let query = supabase
+  const query = supabase
     .from("player_teams")
     .select("player_id, players(*)")
     .eq("team_id", teamId);
-  if (activePlayerIds.length > 0) {
-    query = query.not("player_id", "in", `(${activePlayerIds.join(",")})`);
-  }
 
   const { data: availablePlayers, error: availableError } = await query;
 
@@ -168,11 +149,12 @@ const EditSquad = ({
         const newSquadPlayers = playersToAdd.map((player) => ({
           player_id: player.player_id,
           squad_id: squadId,
+          active: true,
         }));
 
         const { error: addError } = await supabase
           .from("squad_players")
-          .insert(newSquadPlayers);
+          .upsert(newSquadPlayers);
 
         if (addError) throw addError;
       }
@@ -240,6 +222,8 @@ const EditSquad = ({
             boxShadow: 24,
             p: 4,
             borderRadius: 2,
+            overflow: "scroll",
+            maxHeight: "80vh",
           }}
         >
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -295,6 +279,9 @@ const EditSquad = ({
                 variant="outlined"
                 fullWidth
                 required
+                slotProps={{
+                  htmlInput: { maxLength: 20 },
+                }}
               />
               <FormControl fullWidth sx={{ marginTop: 1 }}>
                 <Autocomplete

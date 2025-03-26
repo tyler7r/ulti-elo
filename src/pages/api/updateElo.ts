@@ -8,6 +8,7 @@ interface PlayerRating {
   sigma: number;
   elo: number;
   elo_change: number;
+  highest_elo: number;
 }
 
 const SCORE_SCALING_FACTOR = 0.05;
@@ -25,7 +26,7 @@ export async function updateElo(
     // Fetch player ratings for Squad A
     const { data: playersA, error: errorA } = await supabase
       .from("player_teams")
-      .select("player_id, players(mu, sigma, elo, elo_change)")
+      .select("player_id, players(mu, sigma, elo, elo_change, highest_elo)")
       .in("player_id", squadAPlayerIDs)
       .eq("team_id", teamId);
 
@@ -34,7 +35,7 @@ export async function updateElo(
     // Fetch player ratings for Squad B
     const { data: playersB, error: errorB } = await supabase
       .from("player_teams")
-      .select("player_id, players(mu, sigma, elo, elo_change)")
+      .select("player_id, players(mu, sigma, elo, elo_change, highest_elo)")
       .in("player_id", squadBPlayerIDs)
       .eq("team_id", teamId);
 
@@ -46,6 +47,7 @@ export async function updateElo(
       sigma: Number(p.players.sigma),
       elo: Number(p.players.elo),
       elo_change: Number(p.players.elo_change),
+      highest_elo: Number(p.players.highest_elo),
     }));
 
     const parsedPlayersB: PlayerRating[] = playersB.map((p) => ({
@@ -54,6 +56,7 @@ export async function updateElo(
       sigma: Number(p.players.sigma),
       elo: Number(p.players.elo),
       elo_change: Number(p.players.elo_change),
+      highest_elo: Number(p.players.highest_elo),
     }));
 
     const teamA: Rating[] = parsedPlayersA.map(
@@ -107,6 +110,7 @@ export async function updateElo(
 
         // Modify 'mu' directly based on score influence and rating difference
         const newElo = p.elo + eloChange; // ✅ Compute Elo After
+        const newHighElo = newElo > p.highest_elo ? newElo : p.highest_elo;
 
         return Promise.all([
           // Update player_teams table with new ratings
@@ -117,12 +121,18 @@ export async function updateElo(
               sigma: newSigma,
               elo: newElo,
               elo_change: eloChange,
+              highest_elo: newHighElo,
             })
             .eq("id", p.player_id),
           // Update game_players table with elo_before and elo_after
           supabase
             .from("game_players")
-            .update({ elo_before: p.elo, elo_after: newElo })
+            .update({
+              elo_before: p.elo,
+              elo_after: newElo,
+              mu_before: p.mu,
+              sigma_before: p.sigma,
+            })
             .eq("player_id", p.player_id)
             .eq("game_id", gameId),
         ]);
@@ -141,6 +151,7 @@ export async function updateElo(
 
         // Modify 'mu' directly based on score influence and rating difference
         const newElo = p.elo + eloChange; // ✅ Compute Elo After
+        const newHighElo = newElo > p.highest_elo ? newElo : p.highest_elo;
 
         return Promise.all([
           // Update player_teams table with new ratings
@@ -151,12 +162,18 @@ export async function updateElo(
               sigma: newSigma,
               elo: newElo,
               elo_change: eloChange,
+              highest_elo: newHighElo,
             })
             .eq("id", p.player_id),
           // Update game_players table with elo_before and elo_after
           supabase
             .from("game_players")
-            .update({ elo_before: p.elo, elo_after: newElo })
+            .update({
+              elo_before: p.elo,
+              elo_after: newElo,
+              mu_before: p.mu,
+              sigma_before: p.sigma,
+            })
             .eq("player_id", p.player_id)
             .eq("game_id", gameId),
         ]);
