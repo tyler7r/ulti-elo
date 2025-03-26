@@ -27,8 +27,6 @@ const GameHistory = ({
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  //   const fetchingInitial = useRef(false); // Track if initial fetch is done
-
   // ✅ Memoized fetch function to prevent infinite re-renders
   const fetchGames = useCallback(
     async (newPage: number) => {
@@ -51,6 +49,9 @@ const GameHistory = ({
             newPage === 1 ? newGames : [...prev, ...newGames]
           );
           setPage(newPage + 1);
+          if (newGames.length < PAGE_SIZE) {
+            setHasMore(false);
+          }
         }
       } catch (error) {
         console.error("Error fetching games:", error);

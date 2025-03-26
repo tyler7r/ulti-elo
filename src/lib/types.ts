@@ -96,6 +96,8 @@ export type PlayerHistoryType = {
   mu: number;
   sigma: number;
   win_percent: number;
+  highest_elo: number;
+  longest_win_streak: number;
 };
 
 export type GameHistoryType = {
@@ -114,4 +116,9 @@ export type GameHistoryType = {
     info: SquadType;
     players: PlayerHistoryType[];
   };
+};
+
+export type AlertType = {
+  message: string | null;
+  severity: "info" | "success" | "error";
 };

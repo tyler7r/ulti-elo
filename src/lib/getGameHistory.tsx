@@ -90,6 +90,8 @@ export const getGameHistory = async ({
           mu: gp.players.mu,
           sigma: gp.players.sigma,
           win_percent: gp.players.win_percent,
+          highest_elo: gp.players.highest_elo,
+          longest_win_streak: gp.players.longest_win_streak,
         })),
     },
     squadB: {
@@ -114,6 +116,8 @@ export const getGameHistory = async ({
           mu: gp.players.mu,
           sigma: gp.players.sigma,
           win_percent: gp.players.win_percent,
+          highest_elo: gp.players.highest_elo,
+          longest_win_streak: gp.players.longest_win_streak,
         })),
     },
   }));
