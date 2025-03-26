@@ -1,3 +1,4 @@
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { PlayerType } from "@/lib/types";
 import CloseIcon from "@mui/icons-material/Close";
@@ -12,6 +13,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 type CreateTeamProps = {
@@ -20,6 +22,9 @@ type CreateTeamProps = {
 };
 
 const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
+  const { user } = useAuth();
+  const router = useRouter();
+
   const [name, setName] = useState("");
   const [players, setPlayers] = useState<PlayerType[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<PlayerType[]>([]);
@@ -46,45 +51,71 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
     setError("");
     setSuccess(false);
 
-    // Insert new player
-    const { data: team, error: teamError } = await supabase
-      .from("teams")
-      .insert([{ name }])
-      .select()
-      .single();
-
-    if (teamError) {
-      setError("Error creating player.");
-      console.error(teamError);
+    if (!user) {
+      setError("You must be signed in to create a team!");
       setLoading(false);
       return;
     }
 
-    const teamId = team.id;
+    // Insert new team
+    try {
+      const { data: team, error: teamError } = await supabase
+        .from("teams")
+        .insert([{ name, owner_id: user.id }])
+        .select()
+        .single();
 
-    // Insert player-team relationships if teams were selected
-    if (selectedPlayers.length > 0) {
-      const playerTeams = selectedPlayers.map((p) => ({
-        player_id: p.id,
-        team_id: teamId,
-      }));
-
-      const { error: playerTeamsError } = await supabase
-        .from("player_teams")
-        .insert(playerTeams);
-
-      if (playerTeamsError) {
-        setError("Error assigning players.");
-        console.error(playerTeamsError);
+      if (teamError) {
+        setError("Error creating player.");
+        console.log(teamError);
         setLoading(false);
         return;
       }
-    }
 
-    setName("");
-    setSelectedPlayers([]);
-    setSuccess(true);
-    setLoading(false);
+      const teamId = team.id;
+
+      const { error: teamAdminError } = await supabase
+        .from("team_admins")
+        .insert([{ is_owner: true, team_id: teamId, user_id: user.id }]);
+
+      if (teamAdminError) {
+        setError("Error creating team admin account.");
+        console.log(teamAdminError);
+        setLoading(false);
+        return;
+      }
+
+      // Insert player-team relationships if teams were selected
+      if (selectedPlayers.length > 0) {
+        const playerTeams = selectedPlayers.map((p) => ({
+          player_id: p.id,
+          team_id: teamId,
+        }));
+
+        const { error: playerTeamsError } = await supabase
+          .from("player_teams")
+          .insert(playerTeams);
+
+        if (playerTeamsError) {
+          setError("Error assigning players.");
+          console.log(playerTeamsError);
+          setLoading(false);
+          return;
+        }
+      }
+
+      setName("");
+      setSelectedPlayers([]);
+      setSuccess(true);
+      setTimeout(() => {
+        router.push(`/team/${teamId}`);
+      });
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setError("An unexpected error occured.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -159,12 +190,15 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                sx={{ marginBottom: "8px" }}
               />
 
               {/* Multi-Select Dropdown for Players */}
               <Autocomplete
                 multiple
-                options={players}
+                options={players.filter(
+                  (player) => !selectedPlayers.some((p) => p.id === player.id)
+                )}
                 getOptionLabel={(option) => option.name}
                 value={selectedPlayers}
                 onChange={(_, newValue) => setSelectedPlayers(newValue)}

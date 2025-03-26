@@ -1,4 +1,5 @@
 import Header from "@/components/Header";
+import AuthProvider from "@/contexts/AuthProvider";
 import "@/styles/globals.css";
 import { createTheme, ThemeProvider } from "@mui/material";
 import type { AppProps } from "next/app";
@@ -53,20 +54,22 @@ export default function App({ Component, pageProps }: AppProps) {
   };
 
   return (
-    <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
-      <div
-        style={{
-          minHeight: "100vh",
-          background: isDarkMode ? "#222222" : "#f4f6f8",
-          color: isDarkMode ? "#ffffff" : "#000000",
-        }}
-      >
-        <Head>
-          <title>Ulti ELO</title>
-        </Head>
-        <Header toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
-        <Component {...pageProps} />
-      </div>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+        <div
+          style={{
+            minHeight: "100vh",
+            background: isDarkMode ? "#222222" : "#f4f6f8",
+            color: isDarkMode ? "#ffffff" : "#000000",
+          }}
+        >
+          <Head>
+            <title>Ulti ELO</title>
+          </Head>
+          <Header toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
+          <Component {...pageProps} />
+        </div>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
