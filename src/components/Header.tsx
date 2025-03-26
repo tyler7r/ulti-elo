@@ -1,9 +1,11 @@
+import { useAuth } from "@/contexts/AuthContext";
 import AddIcon from "@mui/icons-material/Add"; // PlusIcon
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import {
   AppBar,
   Box,
+  Button,
   IconButton,
   Menu,
   MenuItem,
@@ -15,6 +17,7 @@ import React, { useState } from "react";
 import CreatePlayer from "./CreatePlayer";
 import CreateTeam from "./CreateTeam";
 import InfoModal from "./InfoModal";
+import LoginFirstWarning from "./LoginFirstWarning";
 
 type HeaderProps = {
   toggleTheme: () => void;
@@ -22,9 +25,11 @@ type HeaderProps = {
 };
 
 const Header = ({ toggleTheme, isDarkMode }: HeaderProps) => {
+  const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [openPlayerModal, setOpenPlayerModal] = useState(false);
   const [openTeamModal, setOpenTeamModal] = useState(false);
+  const [openLogin, setOpenLogin] = useState(false);
   const open = Boolean(anchorEl);
   const router = useRouter();
 
@@ -42,13 +47,27 @@ const Header = ({ toggleTheme, isDarkMode }: HeaderProps) => {
   };
 
   const openCreateTeamModal = () => {
-    setOpenTeamModal(true);
-    handleClose();
+    if (user) {
+      setOpenTeamModal(true);
+      handleClose();
+    } else {
+      setOpenLogin(true);
+    }
   };
 
   const closeModal = () => {
     setOpenPlayerModal(false);
     setOpenTeamModal(false);
+    setOpenLogin(false);
+    setAnchorEl(null);
+  };
+
+  const handleAuthAction = () => {
+    if (user) {
+      logout();
+    } else {
+      router.push("/auth/login");
+    }
   };
 
   return (
@@ -69,7 +88,7 @@ const Header = ({ toggleTheme, isDarkMode }: HeaderProps) => {
           </div>
 
           {/* Plus Icon Button */}
-          <div className="flex gap-2 items-center justify-center">
+          <div className="flex items-center justify-center">
             <Box>
               <IconButton
                 onClick={handleMenuClick}
@@ -86,13 +105,17 @@ const Header = ({ toggleTheme, isDarkMode }: HeaderProps) => {
                 anchorEl={anchorEl}
                 open={open}
                 onClose={handleClose}
-                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                transformOrigin={{ vertical: "top", horizontal: "right" }}
               >
-                <MenuItem onClick={openCreatePlayerModal}>
+                <MenuItem
+                  onClick={openCreatePlayerModal}
+                  sx={{ fontWeight: "bold", fontSize: "14px" }}
+                >
                   Create New Player
                 </MenuItem>
-                <MenuItem onClick={openCreateTeamModal}>
+                <MenuItem
+                  onClick={openCreateTeamModal}
+                  sx={{ fontWeight: "bold", fontSize: "14px" }}
+                >
                   Create New Team
                 </MenuItem>
               </Menu>
@@ -104,11 +127,24 @@ const Header = ({ toggleTheme, isDarkMode }: HeaderProps) => {
                 <DarkModeIcon color="primary" fontSize="large" />
               )}
             </IconButton>
+            <Button
+              onClick={handleAuthAction}
+              variant="outlined"
+              color={user ? "secondary" : "primary"}
+              size="small"
+            >
+              {user ? "Logout" : "Sign in"}
+            </Button>
           </div>
         </Toolbar>
       </AppBar>
       <CreatePlayer onClose={closeModal} openPlayerModal={openPlayerModal} />
       <CreateTeam onClose={closeModal} openTeamModal={openTeamModal} />
+      <LoginFirstWarning
+        requestedAction="Create Team"
+        open={openLogin}
+        handleClose={closeModal}
+      />
     </>
   );
 };

@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { PlayerSelectType } from "@/lib/types";
 import CloseIcon from "@mui/icons-material/Close";
 import {
+  Alert,
   Autocomplete,
   Backdrop,
   Box,
@@ -87,6 +88,12 @@ const CreateSquad = ({
     setLoading(true);
     setError("");
     setSuccess("");
+    if (selectedPlayers.length === 0) {
+      setError("There must be at least 1 player on your squad!");
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data: squad, error } = await supabase
         .from("squads")
@@ -106,12 +113,14 @@ const CreateSquad = ({
       await supabase.from("squad_players").insert(squadPlayers);
 
       setSuccess(`${squadName} successfully created!`);
-      setLoading(false);
-      setSquadName("");
-      setSelectedPlayers([]);
       const ps = await fetchAvailablePlayers(teamId);
       setPlayers(ps);
-      updateSquads();
+      setTimeout(() => {
+        setLoading(false);
+        setSquadName("");
+        setSelectedPlayers([]);
+        updateSquads();
+      }, 500);
     } catch (error) {
       console.error("Error creating squad:", error);
     }
@@ -165,25 +174,6 @@ const CreateSquad = ({
               </IconButton>
             </Box>
 
-            {error && (
-              <Typography
-                variant="overline"
-                sx={{ fontWeight: "bold" }}
-                color="error"
-              >
-                {error}
-              </Typography>
-            )}
-            {success && (
-              <Typography
-                variant="overline"
-                sx={{ fontWeight: "bold" }}
-                color="success"
-              >
-                Team created successfully!
-              </Typography>
-            )}
-
             <form
               onSubmit={handleSubmit}
               className="space-y-4 flex flex-col gap-2"
@@ -230,6 +220,11 @@ const CreateSquad = ({
                   )}
                 />
               </FormControl>
+              {(error || success) && (
+                <Alert severity={error ? "error" : "success"}>
+                  {error ? error : success}
+                </Alert>
+              )}
               <Button
                 type="submit"
                 variant="contained"

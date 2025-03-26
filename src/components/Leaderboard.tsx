@@ -43,32 +43,44 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
 
   useEffect(() => {
     const fetchPlayers = async () => {
-      let query = supabase
-        .from("player_teams")
-        .select(
-          `team_id, players!inner(*)
-        `
-        )
-        .order(`players(${sortBy})`, { ascending: sortDirection === "asc" });
-
-      // If teamId is provided, filter by team
       if (teamId) {
-        query = query.eq("team_id", teamId);
+        const { data, error } = await supabase
+          .from("player_teams")
+          .select(
+            `team_id, players!inner(*)
+        `
+          )
+          .eq("team_id", teamId)
+          .order(`players(${sortBy})`, { ascending: sortDirection === "asc" });
+
+        // If teamId is provided, filter by team
         const { data: teamNm } = await supabase
           .from("teams")
           .select("name")
           .eq("id", teamId)
           .single();
         if (teamNm) setTeamName(teamNm.name);
-      }
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Error fetching players:", error);
+        if (error) {
+          console.error("Error fetching players", error);
+        } else {
+          const formattedPlayers = data.map((p) => p.players);
+          setPlayers(formattedPlayers || []);
+        }
       } else {
-        const formattedPlayers = data.map((p) => p.players);
-        setPlayers(formattedPlayers || []);
+        const { data, error } = await supabase
+          .from("players")
+          .select(
+            `*
+        `
+          )
+          .order(sortBy, { ascending: sortDirection === "asc" });
+
+        if (error) {
+          console.error("Error fetching players:", error);
+        } else {
+          setPlayers(data || []);
+        }
       }
       setLoading(false);
     };
@@ -95,14 +107,7 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
 
   return (
     <div className="overflow-x-auto p-4">
-      {teamName ? (
-        <Typography
-          variant="h5"
-          sx={{ fontWeight: "bold", textAlign: "center" }}
-        >
-          {teamName} Leaderboard
-        </Typography>
-      ) : (
+      {!teamName && (
         <Typography variant="h5" sx={{ fontWeight: "bold" }}>
           Global Leaderboard
         </Typography>
