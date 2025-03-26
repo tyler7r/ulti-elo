@@ -51,6 +51,7 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
         `
           )
           .eq("team_id", teamId)
+          .or(`losses.gt.0, wins.gt.0`, { referencedTable: "players" })
           .order(`players(${sortBy})`, { ascending: sortDirection === "asc" });
 
         // If teamId is provided, filter by team
@@ -74,6 +75,7 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
             `*
         `
           )
+          .or("wins.gt.0, losses.gt.0")
           .order(sortBy, { ascending: sortDirection === "asc" });
 
         if (error) {
