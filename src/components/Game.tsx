@@ -1,4 +1,3 @@
-import EditGameForm from "@/components/GameEdits/EditGameForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { GameHistoryType } from "@/lib/types";
 import {
@@ -16,6 +15,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { useState } from "react";
+import EditGameForm from "./EditGameForm";
 import GamePlayers from "./GamePlayers";
 
 type GameProps = {

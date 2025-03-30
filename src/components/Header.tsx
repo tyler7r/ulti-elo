@@ -14,10 +14,10 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
-import LoginFirstWarning from "../Utils/LoginFirstWarning";
 import CreatePlayer from "./CreatePlayer";
 import CreateTeam from "./CreateTeam";
 import InfoModal from "./InfoModal";
+import LoginFirstWarning from "./LoginFirstWarning";
 
 type HeaderProps = {
   toggleTheme: () => void;

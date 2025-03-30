@@ -1,4 +1,4 @@
-import Header from "@/components/Navbar/Header";
+import Header from "@/components/Header";
 import AuthProvider from "@/contexts/AuthProvider";
 import "@/styles/globals.css";
 import { createTheme, ThemeProvider } from "@mui/material";
