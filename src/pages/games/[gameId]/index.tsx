@@ -1,4 +1,4 @@
-import SingleGameView from "@/components/TeamHomePage/HistoryTab/SingleGame";
+import SingleGameView from "@/components/SingleGame";
 import { getGameHistory } from "@/lib/getGameHistory";
 import { GameHistoryType } from "@/lib/types";
 import { useRouter } from "next/router";
