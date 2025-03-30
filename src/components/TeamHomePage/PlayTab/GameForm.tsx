@@ -1,12 +1,6 @@
 import { getOverlappingPlayers } from "@/lib/getOverlappingPlayers";
 import { supabase } from "@/lib/supabase";
-import {
-  AlertType,
-  GameFormSquadType,
-  GameType,
-  PlayerEloType,
-} from "@/lib/types";
-import { updatePlayerStats } from "@/lib/updatePlayerStats";
+import { AlertType, GameFormSquadType, GameType, Player } from "@/lib/types";
 import { submitGame } from "@/pages/api/submitGame";
 import CloseIcon from "@mui/icons-material/Close";
 import {
@@ -42,9 +36,7 @@ const GameForm = ({
   const [squads, setSquads] = useState<GameFormSquadType[]>([]);
   const [squadA, setSquadA] = useState<GameFormSquadType | null>(null);
   const [squadB, setSquadB] = useState<GameFormSquadType | null>(null);
-  const [overlappingPlayers, setOverlappingPlayers] = useState<PlayerEloType[]>(
-    []
-  );
+  const [overlappingPlayers, setOverlappingPlayers] = useState<Player[]>([]);
   const [formData, setFormData] = useState<GameType>({
     id: "",
     team_id: teamId,
@@ -117,17 +109,6 @@ const GameForm = ({
     }));
   };
 
-  const determineWinner = (
-    squadA: GameFormSquadType,
-    squadB: GameFormSquadType
-  ) => {
-    if (formData.squad_a_score > formData.squad_b_score)
-      return squadA.players.map((player) => player.id);
-    if (formData.squad_b_score > formData.squad_a_score)
-      return squadB.players.map((player) => player.id);
-    return []; // No winner in case of a tie
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -146,15 +127,8 @@ const GameForm = ({
       return;
     }
 
-    const winnerIds = determineWinner(squadA, squadB);
-
     const squadAPlayers = squadA.players;
     const squadBPlayers = squadB.players;
-
-    for (const player of squadAPlayers.concat(squadBPlayers)) {
-      const isWinner = winnerIds.includes(player.id);
-      await updatePlayerStats(player.id, isWinner);
-    }
 
     const scoreA = formData.squad_a_score;
     const scoreB = formData.squad_b_score;
@@ -245,7 +219,7 @@ const GameForm = ({
                             <strong className="text-sm">{option.name}:</strong>
                             {option.players.map((p) => (
                               <div key={p.id}>
-                                {p.name} (ELO: {p.elo})
+                                {p.elo ? `${p.name} (ELO: ${p.elo})` : p.name}
                               </div>
                             ))}
                           </li>
@@ -274,7 +248,7 @@ const GameForm = ({
                             <strong className="text-sm">{option.name}:</strong>
                             {option.players.map((p) => (
                               <div key={p.id}>
-                                {p.name} (ELO: {p.elo})
+                                {p.elo ? `${p.name} (ELO: ${p.elo})` : p.name}
                               </div>
                             ))}
                           </li>

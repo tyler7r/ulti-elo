@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { AlertType, GameFormSquadType, PlayerEloType } from "@/lib/types";
+import { AlertType, GameFormSquadType, Player } from "@/lib/types";
 import {
   Alert,
   Box,
@@ -20,7 +20,7 @@ type OverlappingPlayersType = {
   setSquadB: (squadB: GameFormSquadType | null) => void;
   setAlert: (alert: AlertType) => void;
   updateSquads: () => void;
-  overlappingPlayers: PlayerEloType[];
+  overlappingPlayers: Player[];
 };
 
 const OverlappingPlayers = ({
@@ -32,10 +32,7 @@ const OverlappingPlayers = ({
   updateSquads,
   overlappingPlayers,
 }: OverlappingPlayersType) => {
-  const handleRemoveOverlap = async (
-    player: PlayerEloType,
-    squadId: string
-  ) => {
+  const handleRemoveOverlap = async (player: Player, squadId: string) => {
     if (squadA && squadA.id === squadId) {
       setSquadA({
         ...squadA,
@@ -97,7 +94,9 @@ const OverlappingPlayers = ({
             {overlappingPlayers.map((player) => (
               <TableRow key={player.id}>
                 <TableCell sx={{ fontWeight: "bold" }}>
-                  {player.name} ({player.elo})
+                  {player.elo
+                    ? `${player.name} (ELO: ${player.elo})`
+                    : player.name}
                 </TableCell>
                 <TableCell>
                   <Button

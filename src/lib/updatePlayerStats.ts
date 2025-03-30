@@ -1,23 +1,10 @@
-import { supabase } from "./supabase";
+import { PlayerRating } from "./types";
 
-export const updatePlayerStats = async (
-  playerId: string,
-  isWinner: boolean
-) => {
-  const { data: playerData, error } = await supabase
-    .from("players")
-    .select()
-    .eq("id", playerId)
-    .single();
-  if (error) {
-    console.error("Error fetching player Elo:", error);
-    return;
-  }
-
-  let newWinStreak = playerData.win_streak;
-  let newLossStreak = playerData.loss_streak;
-  let wins = playerData.wins;
-  let losses = playerData.losses;
+export const updatePlayerStats = (player: PlayerRating, isWinner: boolean) => {
+  let newWinStreak = player.win_streak;
+  let newLossStreak = player.loss_streak;
+  let wins = player.wins;
+  let losses = player.losses;
 
   if (isWinner) {
     newWinStreak += 1;
@@ -31,23 +18,16 @@ export const updatePlayerStats = async (
 
   const newWinPercent = Number(((wins / (wins + losses)) * 100).toFixed(2));
   const newLongestStreak =
-    newWinStreak > playerData.longest_win_streak
+    newWinStreak > player.longest_win_streak
       ? newWinStreak
-      : playerData.longest_win_streak;
+      : player.longest_win_streak;
 
-  const { error: updateError } = await supabase
-    .from("players")
-    .update({
-      win_streak: newWinStreak,
-      loss_streak: newLossStreak,
-      win_percent: newWinPercent,
-      losses,
-      wins,
-      longest_win_streak: newLongestStreak,
-    })
-    .eq("id", playerId);
-
-  if (updateError) {
-    console.error("Error updating streak:", updateError);
-  }
+  return {
+    newWinStreak,
+    newLossStreak,
+    wins,
+    losses,
+    newWinPercent,
+    newLongestStreak,
+  };
 };

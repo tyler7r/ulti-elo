@@ -1,15 +1,7 @@
 import { supabase } from "@/lib/supabase";
-import { GameFormSquadType } from "@/lib/types";
+import { GameFormSquadType, PlayerRating } from "@/lib/types";
+import { updatePlayerStats } from "@/lib/updatePlayerStats";
 import { rate, Rating } from "ts-trueskill";
-
-interface PlayerRating {
-  player_id: string;
-  mu: number;
-  sigma: number;
-  elo: number;
-  elo_change: number;
-  highest_elo: number;
-}
 
 const SCORE_SCALING_FACTOR = 0.05;
 const UNDERDOG_SCALING_FACTOR = 0.15;
@@ -26,7 +18,9 @@ export async function updateElo(
     // Fetch player ratings for Squad A
     const { data: playersA, error: errorA } = await supabase
       .from("player_teams")
-      .select("player_id, players(mu, sigma, elo, elo_change, highest_elo)")
+      .select(
+        "player_id, players(mu, sigma, elo, elo_change, highest_elo, wins, losses, win_percent, win_streak, loss_streak, longest_win_streak)"
+      )
       .in("player_id", squadAPlayerIDs)
       .eq("team_id", teamId);
 
@@ -35,7 +29,9 @@ export async function updateElo(
     // Fetch player ratings for Squad B
     const { data: playersB, error: errorB } = await supabase
       .from("player_teams")
-      .select("player_id, players(mu, sigma, elo, elo_change, highest_elo)")
+      .select(
+        "player_id, players(mu, sigma, elo, elo_change, highest_elo, wins, losses, win_percent, win_streak, loss_streak, longest_win_streak)"
+      )
       .in("player_id", squadBPlayerIDs)
       .eq("team_id", teamId);
 
@@ -48,6 +44,12 @@ export async function updateElo(
       elo: Number(p.players.elo),
       elo_change: Number(p.players.elo_change),
       highest_elo: Number(p.players.highest_elo),
+      wins: Number(p.players.wins),
+      losses: Number(p.players.losses),
+      win_percent: Number(p.players.win_percent),
+      win_streak: Number(p.players.win_streak),
+      loss_streak: Number(p.players.loss_streak),
+      longest_win_streak: Number(p.players.longest_win_streak),
     }));
 
     const parsedPlayersB: PlayerRating[] = playersB.map((p) => ({
@@ -57,6 +59,12 @@ export async function updateElo(
       elo: Number(p.players.elo),
       elo_change: Number(p.players.elo_change),
       highest_elo: Number(p.players.highest_elo),
+      wins: Number(p.players.wins),
+      losses: Number(p.players.losses),
+      win_percent: Number(p.players.win_percent),
+      win_streak: Number(p.players.win_streak),
+      loss_streak: Number(p.players.loss_streak),
+      longest_win_streak: Number(p.players.longest_win_streak),
     }));
 
     const teamA: Rating[] = parsedPlayersA.map(
@@ -112,6 +120,8 @@ export async function updateElo(
         const newElo = p.elo + eloChange; // ✅ Compute Elo After
         const newHighElo = newElo > p.highest_elo ? newElo : p.highest_elo;
 
+        const newStats = updatePlayerStats(p, isWinner);
+
         return Promise.all([
           // Update player_teams table with new ratings
           supabase
@@ -122,6 +132,12 @@ export async function updateElo(
               elo: newElo,
               elo_change: eloChange,
               highest_elo: newHighElo,
+              wins: newStats.wins,
+              losses: newStats.losses,
+              win_streak: newStats.newWinStreak,
+              loss_streak: newStats.newLossStreak,
+              longest_win_streak: newStats.newLongestStreak,
+              win_percent: newStats.newWinPercent,
             })
             .eq("id", p.player_id),
           // Update game_players table with elo_before and elo_after
@@ -132,6 +148,14 @@ export async function updateElo(
               elo_after: newElo,
               mu_before: p.mu,
               sigma_before: p.sigma,
+              wins_before: p.wins,
+              losses_before: p.losses,
+              win_streak_before: p.win_streak,
+              loss_streak_before: p.loss_streak,
+              win_percent_before: p.win_percent,
+              highest_elo_before: p.highest_elo,
+              longest_win_streak_before: p.longest_win_streak,
+              elo_change_before: p.elo_change,
             })
             .eq("player_id", p.player_id)
             .eq("game_id", gameId),
@@ -153,6 +177,8 @@ export async function updateElo(
         const newElo = p.elo + eloChange; // ✅ Compute Elo After
         const newHighElo = newElo > p.highest_elo ? newElo : p.highest_elo;
 
+        const newStats = updatePlayerStats(p, isWinner);
+
         return Promise.all([
           // Update player_teams table with new ratings
           supabase
@@ -163,6 +189,12 @@ export async function updateElo(
               elo: newElo,
               elo_change: eloChange,
               highest_elo: newHighElo,
+              wins: newStats.wins,
+              losses: newStats.losses,
+              win_streak: newStats.newWinStreak,
+              loss_streak: newStats.newLossStreak,
+              longest_win_streak: newStats.newLongestStreak,
+              win_percent: newStats.newWinPercent,
             })
             .eq("id", p.player_id),
           // Update game_players table with elo_before and elo_after
@@ -173,6 +205,14 @@ export async function updateElo(
               elo_after: newElo,
               mu_before: p.mu,
               sigma_before: p.sigma,
+              wins_before: p.wins,
+              losses_before: p.losses,
+              win_streak_before: p.win_streak,
+              loss_streak_before: p.loss_streak,
+              win_percent_before: p.win_percent,
+              highest_elo_before: p.highest_elo,
+              longest_win_streak_before: p.longest_win_streak,
+              elo_change_before: p.elo_change,
             })
             .eq("player_id", p.player_id)
             .eq("game_id", gameId),
