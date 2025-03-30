@@ -54,10 +54,9 @@ const Game = ({ game }: GameProps) => {
   };
 
   const handleCloseSnackbar = (
-    event: React.SyntheticEvent | Event,
+    _event: React.SyntheticEvent | Event,
     reason?: string
   ) => {
-    if (event) event.preventDefault();
     if (reason === "clickaway") {
       return;
     }

@@ -1,5 +1,7 @@
 import Leaderboard from "@/components/Leaderboard";
 import CreateTeam from "@/components/Navbar/CreateTeam";
+import LoginFirstWarning from "@/components/Utils/LoginFirstWarning";
+import { useAuth } from "@/contexts/AuthContext";
 import AddIcon from "@mui/icons-material/Add"; // PlusIcon
 import { Box, Button, IconButton, Typography } from "@mui/material";
 import { useRouter } from "next/router";
@@ -8,10 +10,12 @@ import { supabase } from "../lib/supabase";
 import { TeamType } from "../lib/types";
 
 export default function HomePage() {
+  const { user } = useAuth();
   const [teams, setTeams] = useState<TeamType[]>([]);
   const [openTeamModal, setOpenTeamModal] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [openLogin, setOpenLogin] = useState<boolean>(false);
 
   const router = useRouter();
 
@@ -50,11 +54,16 @@ export default function HomePage() {
   };
 
   const openCreateTeamModal = () => {
-    setOpenTeamModal(true);
+    if (user) {
+      setOpenTeamModal(true);
+    } else {
+      setOpenLogin(true);
+    }
   };
 
-  const handleClose = () => {
+  const closeModal = () => {
     setOpenTeamModal(false);
+    setOpenLogin(false);
   };
 
   if (error) {
@@ -79,7 +88,7 @@ export default function HomePage() {
           </IconButton>
         </div>
         {openTeamModal && (
-          <CreateTeam onClose={handleClose} openTeamModal={openTeamModal} />
+          <CreateTeam onClose={closeModal} openTeamModal={openTeamModal} />
         )}
         {loading ? (
           <Typography>Loading teams...</Typography>
@@ -104,6 +113,11 @@ export default function HomePage() {
         )}
       </Box>
       <Leaderboard />
+      <LoginFirstWarning
+        requestedAction="Create Team"
+        open={openLogin}
+        handleClose={closeModal}
+      />
     </div>
   );
 }
