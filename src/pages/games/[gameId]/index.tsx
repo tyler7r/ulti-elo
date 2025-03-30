@@ -4,7 +4,7 @@ import { GameHistoryType } from "@/lib/types";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-const PostGame = () => {
+const GamePage = () => {
   const router = useRouter();
   const gameId = router.query.gameId as string;
   const [game, setGame] = useState<GameHistoryType | null>(null);
@@ -22,4 +22,4 @@ const PostGame = () => {
   return game && <SingleGameView game={game} />;
 };
 
-export default PostGame;
+export default GamePage;
