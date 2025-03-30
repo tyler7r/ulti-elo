@@ -1,5 +1,5 @@
-import CreateTeam from "@/components/CreateTeam";
 import Leaderboard from "@/components/Leaderboard";
+import CreateTeam from "@/components/Navbar/CreateTeam";
 import AddIcon from "@mui/icons-material/Add"; // PlusIcon
 import { Box, Button, IconButton, Typography } from "@mui/material";
 import { useRouter } from "next/router";
