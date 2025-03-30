@@ -1,3 +1,4 @@
+import EditGameForm from "@/components/EditGame/EditGameForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { GameHistoryType } from "@/lib/types";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -13,7 +14,6 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/router";
 import { useState } from "react";
-import EditGameForm from "./EditGameForm";
 import GamePlayers from "./GamePlayers";
 
 type SingleGameViewProps = {

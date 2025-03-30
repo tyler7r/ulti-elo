@@ -1,5 +1,5 @@
-import GameHistory from "@/components/GameHistory";
 import Leaderboard from "@/components/Leaderboard";
+import GameHistory from "@/components/TeamHomePage/HistoryTab/GameHistory";
 import PlayTab from "@/components/TeamHomePage/PlayTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
