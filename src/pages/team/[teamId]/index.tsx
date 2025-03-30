@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { TeamType } from "@/lib/types";
 import LockIcon from "@mui/icons-material/Lock";
-import ShieldIcon from "@mui/icons-material/Shield";
+import SettingsIcon from "@mui/icons-material/Settings";
 import {
   Alert,
   Badge,
@@ -34,6 +34,7 @@ const TeamHomePage = () => {
     message: string | null;
     severity: "error" | "success" | "info";
   }>({ message: null, severity: "error" });
+  const [ownerName, setOwnerName] = useState<string | undefined>(undefined);
 
   const router = useRouter();
   const teamId = router.query.teamId as string;
@@ -42,12 +43,15 @@ const TeamHomePage = () => {
   const fetchTeam = async (teamId: string) => {
     const { data, error } = await supabase
       .from("teams")
-      .select()
+      .select(`*, users!teams_owner_id_fkey(name)`)
       .eq("id", teamId)
       .single();
     if (error) console.error("Error fetching team:", error.message);
 
     setTeam(data);
+    if (data?.users?.name) {
+      setOwnerName(data.users.name);
+    }
   };
 
   const fetchPendingRequests = useCallback(async () => {
@@ -167,7 +171,7 @@ const TeamHomePage = () => {
         {user && userRole && (
           <IconButton onClick={handleNavigateToAdmin} size="small">
             <Badge badgeContent={pendingRequests} color="secondary">
-              <ShieldIcon />
+              <SettingsIcon />
             </Badge>
           </IconButton>
         )}
@@ -201,7 +205,7 @@ const TeamHomePage = () => {
                 ? `You must be a team admin for ${
                     team?.name ? team.name : "this team"
                   } to record games. Request admin access to
-              this team. The team owner will be notified.`
+              this team. The team owner (${ownerName}) will be notified.`
                 : `You must have a registered account and be a team admin for ${
                     team?.name ? team.name : "this team"
                   } before you can record games.`}
