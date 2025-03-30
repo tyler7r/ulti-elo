@@ -24,8 +24,9 @@ const ResetPassword = () => {
     });
 
     if (error) {
-      console.log("Password reset error:", error.message);
-      setMessage("Failed to reset password. Please try again.");
+      setMessage(
+        `Failed to reset password: ${error.message}. Please try again.`
+      );
     } else {
       setMessage("Password reset successfully. Redirecting...");
       setTimeout(() => router.push("/auth/login"), 300);

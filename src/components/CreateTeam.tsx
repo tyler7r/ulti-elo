@@ -66,8 +66,7 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
         .single();
 
       if (teamError) {
-        setError("Error creating player.");
-        console.log(teamError);
+        setError(`Error creating player: ${teamError.message}`);
         setLoading(false);
         return;
       }
@@ -79,8 +78,9 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
         .insert([{ is_owner: true, team_id: teamId, user_id: user.id }]);
 
       if (teamAdminError) {
-        setError("Error creating team admin account.");
-        console.log(teamAdminError);
+        setError(
+          `Error creating team admin account: ${teamAdminError.message}`
+        );
         setLoading(false);
         return;
       }
@@ -97,8 +97,7 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
           .insert(playerTeams);
 
         if (playerTeamsError) {
-          setError("Error assigning players.");
-          console.log(playerTeamsError);
+          setError(`Error assigning players: ${playerTeamsError.message}.`);
           setLoading(false);
           return;
         }

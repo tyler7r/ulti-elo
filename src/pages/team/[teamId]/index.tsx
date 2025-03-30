@@ -96,7 +96,10 @@ const TeamHomePage = () => {
             severity: "info",
           });
         }
-        console.log("Error sending admin request:", error.message);
+        setRequestAdminMessage({
+          message: `Error sending admin request: ${error.message}`,
+          severity: "error",
+        });
         setRequestAdminLoading(false);
       } else {
         setRequestAdminMessage({

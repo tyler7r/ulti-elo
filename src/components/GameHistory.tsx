@@ -14,7 +14,7 @@ type GameHistoryProps = {
   gameId?: string;
 };
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 5;
 
 const GameHistory = ({
   teamId,
@@ -77,7 +77,7 @@ const GameHistory = ({
 
   return (
     <div className="p-4 w-full flex flex-col">
-      <Typography variant="h6" fontWeight={"bold"}>
+      <Typography variant="h5" fontWeight={"bold"}>
         Game History
       </Typography>
 
