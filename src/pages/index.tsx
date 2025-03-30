@@ -1,5 +1,5 @@
-import CreateTeam from "@/components/CreateTeam";
 import Leaderboard from "@/components/Leaderboard";
+import CreateTeam from "@/components/Navbar/CreateTeam";
 import AddIcon from "@mui/icons-material/Add"; // PlusIcon
 import { Box, Button, IconButton, Typography } from "@mui/material";
 import { useRouter } from "next/router";
@@ -87,7 +87,6 @@ export default function HomePage() {
           <Box
             className="w-full items-center justify-center"
             display="flex"
-            // gridTemplateColumns="repeat(auto-fill, minmax(200px, 1fr))"
             flexWrap="wrap"
             gap={2}
           >
