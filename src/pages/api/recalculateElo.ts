@@ -243,24 +243,6 @@ export async function recalculateElo(
       gameId: string,
       currentPlayerStats: CurrentPlayerStats
     ) => {
-      console.log("Update Player Stat Inputs", {
-        playerId,
-        newMu,
-        oldMu,
-        newSigma,
-        oldSigma,
-        newElo,
-        newEloChange,
-        newHighestElo,
-        wins,
-        losses,
-        winStreak,
-        lossStreak,
-        longestWinStreak,
-        winPercent,
-        isWinner,
-        gameId,
-      });
       let newWinStreak = winStreak;
       let newLossStreak = lossStreak;
       let newWins = wins;
@@ -281,16 +263,6 @@ export async function recalculateElo(
       );
       const newLongestStreak = Math.max(newWinStreak, longestWinStreak);
 
-      console.log("Player calculated stats before database update", {
-        playerId,
-        newWinPercent,
-        newWinStreak,
-        newWins,
-        newLosses,
-        newLongestStreak,
-        newLossStreak,
-      });
-
       const { data: playersTableUpdate, error: updateError } = await supabase
         .from("players")
         .update({
@@ -310,7 +282,6 @@ export async function recalculateElo(
         .select();
       if (updateError) {
         console.log("Players Table Update Error", updateError.message);
-        throw updateError;
       }
       console.log("Players Table Update Stats", playersTableUpdate);
       const { data: newGamePlayerStats, error: gamePlayerUpdateError } =
@@ -338,7 +309,6 @@ export async function recalculateElo(
           "Game Players Table Update Error",
           gamePlayerUpdateError.message
         );
-        throw gamePlayerUpdateError;
       }
       console.log(
         "Game Player Stats after updatePlayerStats",
