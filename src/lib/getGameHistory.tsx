@@ -16,7 +16,7 @@ export const getGameHistory = async ({
   playerId,
   gameId,
   page = 1,
-  limit = 4,
+  limit = 5,
 }: FilterParam): Promise<GameHistoryType[]> => {
   const offset = (page - 1) * limit;
   let query = supabase

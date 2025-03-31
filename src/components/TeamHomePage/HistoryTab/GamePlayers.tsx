@@ -1,4 +1,4 @@
-import { PlayerHistoryType, SquadType } from "@/lib/types";
+import { SquadType } from "@/lib/types";
 import {
   Paper,
   Table,
@@ -10,19 +10,21 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
+import { GamePlayersType } from "./GamePlayersContainer";
 
 type GamePlayersProps = {
-  squad: {
-    info: SquadType;
-    players: PlayerHistoryType[];
-  };
+  squad: SquadType;
+  players: GamePlayersType[];
   isSquadA: boolean;
   singleGame?: boolean;
 };
 
-const GamePlayers = ({ squad, isSquadA, singleGame }: GamePlayersProps) => {
-  const { info, players } = squad;
-
+const GamePlayers = ({
+  squad,
+  isSquadA,
+  singleGame,
+  players,
+}: GamePlayersProps) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === "dark";
 
@@ -31,7 +33,11 @@ const GamePlayers = ({ squad, isSquadA, singleGame }: GamePlayersProps) => {
   const rowHoverBackgroundColor = isDarkMode ? "grey.800" : "grey.200";
 
   if (players.length === 0) {
-    return <p>No players found for {info.name}</p>;
+    return (
+      <Typography variant="body2" fontWeight={"bold"}>
+        No players found for {squad.name}
+      </Typography>
+    );
   }
 
   return (
@@ -41,7 +47,7 @@ const GamePlayers = ({ squad, isSquadA, singleGame }: GamePlayersProps) => {
         variant={singleGame ? "h5" : "h6"}
         fontWeight={"bold"}
       >
-        {singleGame ? `${info.name} Players` : info.name}
+        {singleGame ? `${squad.name} Players` : squad.name}
       </Typography>
 
       <div className="overflow-x-auto rounded-sm">
