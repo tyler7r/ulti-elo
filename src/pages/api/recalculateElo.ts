@@ -224,12 +224,12 @@ export async function recalculateElo(
       };
     };
 
-    const updatePlayerStats = async (
+    const updatePlayerStats = (
       playerId: string,
       newMu: number,
-      oldMu: number,
+      // oldMu: number,
       newSigma: number,
-      oldSigma: number,
+      // oldSigma: number,
       newElo: number,
       newEloChange: number,
       newHighestElo: number,
@@ -238,9 +238,9 @@ export async function recalculateElo(
       winStreak: number,
       lossStreak: number,
       longestWinStreak: number,
-      winPercent: number,
+      // winPercent: number,
       isWinner: boolean,
-      gameId: string,
+      // gameId: string,
       currentPlayerStats: CurrentPlayerStats
     ) => {
       let newWinStreak = winStreak;
@@ -263,57 +263,49 @@ export async function recalculateElo(
       );
       const newLongestStreak = Math.max(newWinStreak, longestWinStreak);
 
-      const { data: playersTableUpdate, error: updateError } = await supabase
-        .from("players")
-        .update({
-          mu: newMu,
-          sigma: newSigma,
-          elo: newElo,
-          elo_change: newEloChange,
-          highest_elo: newHighestElo,
-          wins: newWins,
-          losses: newLosses,
-          win_percent: newWinPercent,
-          win_streak: newWinStreak,
-          loss_streak: newLossStreak,
-          longest_win_streak: newLongestStreak,
-        })
-        .eq("id", playerId)
-        .select();
-      if (updateError) {
-        console.log("Players Table Update Error", updateError.message);
-      }
-      console.log("Players Table Update Stats", playersTableUpdate);
-      const { data: newGamePlayerStats, error: gamePlayerUpdateError } =
-        await supabase
-          .from("game_players")
-          .update({
-            is_winner: isWinner,
-            elo_before: newElo - newEloChange,
-            elo_after: newElo,
-            mu_before: oldMu,
-            sigma_before: oldSigma,
-            wins_before: wins,
-            losses_before: losses,
-            win_streak_before: winStreak,
-            loss_streak_before: lossStreak,
-            win_percent_before: winPercent,
-            longest_win_streak_before: longestWinStreak,
-            elo_change_before: newEloChange,
-          })
-          .eq("player_id", playerId)
-          .eq("game_id", gameId)
-          .select();
-      if (gamePlayerUpdateError) {
-        console.log(
-          "Game Players Table Update Error",
-          gamePlayerUpdateError.message
-        );
-      }
-      console.log(
-        "Game Player Stats after updatePlayerStats",
-        newGamePlayerStats
-      );
+      // const { error: updateError } = await supabase
+      //   .from("players")
+      //   .update({
+      //     mu: newMu,
+      //     sigma: newSigma,
+      //     elo: newElo,
+      //     elo_change: newEloChange,
+      //     highest_elo: newHighestElo,
+      //     wins: newWins,
+      //     losses: newLosses,
+      //     win_percent: newWinPercent,
+      //     win_streak: newWinStreak,
+      //     loss_streak: newLossStreak,
+      //     longest_win_streak: newLongestStreak,
+      //   })
+      //   .eq("id", playerId);
+      // if (updateError) {
+      //   console.log("Players Table Update Error", updateError.message);
+      // }
+      // const { error: gamePlayerUpdateError } = await supabase
+      //   .from("game_players")
+      //   .update({
+      //     is_winner: isWinner,
+      //     elo_before: newElo - newEloChange,
+      //     elo_after: newElo,
+      //     mu_before: oldMu,
+      //     sigma_before: oldSigma,
+      //     wins_before: wins,
+      //     losses_before: losses,
+      //     win_streak_before: winStreak,
+      //     loss_streak_before: lossStreak,
+      //     win_percent_before: winPercent,
+      //     longest_win_streak_before: longestWinStreak,
+      //     elo_change_before: newEloChange,
+      //   })
+      //   .eq("player_id", playerId)
+      //   .eq("game_id", gameId);
+      // if (gamePlayerUpdateError) {
+      //   console.log(
+      //     "Game Players Table Update Error",
+      //     gamePlayerUpdateError.message
+      //   );
+      // }
       currentPlayerStats.set(playerId, {
         mu: newMu,
         sigma: newSigma,
@@ -327,6 +319,15 @@ export async function recalculateElo(
         loss_streak: newLossStreak,
         longest_win_streak: newLongestStreak,
       });
+
+      return {
+        winPercent: newWinPercent,
+        winStreak: newWinStreak,
+        lossStreak: newLossStreak,
+        longestWinStreak: newLongestStreak,
+        wins: newWins,
+        losses: newLosses,
+      };
     };
 
     // Revert stats for removed players (using data from previous_game_players_data)
@@ -403,10 +404,42 @@ export async function recalculateElo(
     });
 
     for (const game of gamesToRecalculate) {
+      const playersUpdates: {
+        id: string;
+        name: string;
+        mu: number;
+        sigma: number;
+        elo: number;
+        elo_change: number;
+        highest_elo: number;
+        wins: number;
+        losses: number;
+        win_percent: number;
+        win_streak: number;
+        loss_streak: number;
+        longest_win_streak: number;
+      }[] = [];
+      const gamePlayersUpdates: {
+        player_id: string;
+        game_id: string;
+        squad_id: string;
+        is_winner: boolean;
+        elo_before: number;
+        elo_after: number;
+        mu_before: number;
+        sigma_before: number;
+        wins_before: number;
+        losses_before: number;
+        win_streak_before: number;
+        loss_streak_before: number;
+        win_percent_before: number;
+        longest_win_streak_before: number;
+        elo_change_before: number;
+      }[] = [];
       const { data: squadAGamePlayers, error: fetchSquadAError } =
         await supabase
           .from("game_players")
-          .select("*") // Fetch mu and sigma
+          .select("*, players!inner(name)")
           .eq("game_id", game.id)
           .eq("squad_id", game.squad_a_id);
       if (fetchSquadAError) throw fetchSquadAError;
@@ -414,7 +447,7 @@ export async function recalculateElo(
       const { data: squadBGamePlayers, error: fetchSquadBError } =
         await supabase
           .from("game_players")
-          .select("*") // Fetch mu and sigma
+          .select("*, players!inner(name)")
           .eq("game_id", game.id)
           .eq("squad_id", game.squad_b_id);
       if (fetchSquadBError) throw fetchSquadBError;
@@ -424,10 +457,17 @@ export async function recalculateElo(
           const playerHasCurrentStats = currentPlayerStats.get(sp.player_id);
 
           if (playerHasCurrentStats) {
-            return { player_id: sp.player_id, ...playerHasCurrentStats };
+            return {
+              player_id: sp.player_id,
+              name: sp.players.name,
+              squad_id: sp.squad_id,
+              ...playerHasCurrentStats,
+            };
           } else {
             return {
               player_id: sp.player_id,
+              name: sp.players.name,
+              squad_id: sp.squad_id,
               mu: sp.mu_before ?? 15.0,
               sigma: sp.sigma_before ?? 4,
               elo:
@@ -450,10 +490,17 @@ export async function recalculateElo(
           const playerHasCurrentStats = currentPlayerStats.get(sp.player_id);
 
           if (playerHasCurrentStats) {
-            return { player_id: sp.player_id, ...playerHasCurrentStats };
+            return {
+              player_id: sp.player_id,
+              name: sp.players.name,
+              squad_id: sp.squad_id,
+              ...playerHasCurrentStats,
+            };
           } else {
             return {
               player_id: sp.player_id,
+              name: sp.players.name,
+              squad_id: sp.squad_id,
               mu: sp.mu_before ?? 15.0,
               sigma: sp.sigma_before ?? 4,
               elo:
@@ -553,12 +600,12 @@ export async function recalculateElo(
 
           const newElo = team1Players[index].elo + eloChange;
           const newHighElo = Math.max(newElo, team1Players[index].highest_elo);
-          updatePlayerStats(
+          const newPlayerStats = updatePlayerStats(
             team1Players[index].player_id,
             newMu,
-            team1Players[index].mu,
+            // team1Players[index].mu,
             newSigma,
-            team1Players[index].sigma,
+            // team1Players[index].sigma,
             newElo,
             eloChange,
             newHighElo,
@@ -567,11 +614,43 @@ export async function recalculateElo(
             team1Players[index].win_streak,
             team1Players[index].loss_streak,
             team1Players[index].longest_win_streak,
-            team1Players[index].win_percent,
+            // team1Players[index].win_percent,
             isWinner,
-            game.id,
+            // game.id,
             currentPlayerStats
           );
+          playersUpdates.push({
+            id: team1Players[index].player_id,
+            name: team1Players[index].name,
+            mu: newMu,
+            sigma: newSigma,
+            elo: newElo,
+            elo_change: eloChange,
+            highest_elo: newHighElo,
+            wins: newPlayerStats.wins,
+            loss_streak: newPlayerStats.lossStreak,
+            win_streak: newPlayerStats.winStreak,
+            losses: newPlayerStats.losses,
+            longest_win_streak: newPlayerStats.longestWinStreak,
+            win_percent: newPlayerStats.winPercent,
+          });
+          gamePlayersUpdates.push({
+            player_id: team1Players[index].player_id,
+            game_id: game.id,
+            squad_id: team1Players[index].squad_id,
+            is_winner: isWinner,
+            elo_before: team1Players[index].elo,
+            elo_after: newElo,
+            mu_before: team1Players[index].mu,
+            sigma_before: team1Players[index].sigma,
+            wins_before: team1Players[index].wins,
+            losses_before: team1Players[index].losses,
+            win_streak_before: team1Players[index].win_streak,
+            loss_streak_before: team1Players[index].loss_streak,
+            longest_win_streak_before: team1Players[index].longest_win_streak,
+            win_percent_before: team1Players[index].win_percent,
+            elo_change_before: team1Players[index].elo_change,
+          });
         });
         newRatings[1].forEach((rating, index) => {
           const newMu = rating.mu;
@@ -586,12 +665,12 @@ export async function recalculateElo(
 
           const newElo = team2Players[index].elo + eloChange;
           const newHighElo = Math.max(newElo, team2Players[index].highest_elo);
-          updatePlayerStats(
+          const newPlayerStats = updatePlayerStats(
             team2Players[index].player_id,
             newMu,
-            team2Players[index].mu,
+            // team2Players[index].mu,
             newSigma,
-            team2Players[index].sigma,
+            // team2Players[index].sigma,
             newElo,
             eloChange,
             newHighElo,
@@ -600,12 +679,57 @@ export async function recalculateElo(
             team2Players[index].win_streak,
             team2Players[index].loss_streak,
             team2Players[index].longest_win_streak,
-            team2Players[index].win_percent,
+            // team2Players[index].win_percent,
             isWinner,
-            game.id,
+            // game.id,
             currentPlayerStats
           );
+          playersUpdates.push({
+            id: team2Players[index].player_id,
+            name: team2Players[index].name,
+            mu: newMu,
+            sigma: newSigma,
+            elo: newElo,
+            elo_change: eloChange,
+            highest_elo: newHighElo,
+            wins: newPlayerStats.wins,
+            loss_streak: newPlayerStats.lossStreak,
+            win_streak: newPlayerStats.winStreak,
+            losses: newPlayerStats.losses,
+            longest_win_streak: newPlayerStats.longestWinStreak,
+            win_percent: newPlayerStats.winPercent,
+          });
+          gamePlayersUpdates.push({
+            player_id: team2Players[index].player_id,
+            game_id: game.id,
+            squad_id: team2Players[index].squad_id,
+            is_winner: isWinner,
+            elo_before: team2Players[index].elo,
+            elo_after: newElo,
+            mu_before: team2Players[index].mu,
+            sigma_before: team2Players[index].sigma,
+            wins_before: team2Players[index].wins,
+            losses_before: team2Players[index].losses,
+            win_streak_before: team2Players[index].win_streak,
+            loss_streak_before: team2Players[index].loss_streak,
+            longest_win_streak_before: team2Players[index].longest_win_streak,
+            win_percent_before: team2Players[index].win_percent,
+            elo_change_before: team2Players[index].elo_change,
+          });
         });
+      }
+      if (playersUpdates.length > 0) {
+        const { error: playersBatchError } = await supabase
+          .from("players")
+          .upsert(playersUpdates);
+        if (playersBatchError) console.error("Batch Players Update Error");
+      }
+      if (gamePlayersUpdates.length > 0) {
+        const { error: gamePlayersBatchError } = await supabase
+          .from("game_players")
+          .upsert(gamePlayersUpdates);
+        if (gamePlayersBatchError)
+          console.error("Batch Game Players Update Error");
       }
     }
   } catch (error) {
