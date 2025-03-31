@@ -320,7 +320,8 @@ export async function recalculateElo(
           loss_streak: newLossStreak,
           longest_win_streak: newLongestStreak,
         })
-        .eq("id", playerId);
+        .eq("id", playerId)
+        .select();
       if (updateError) {
         console.log("Players Table Update Error", updateError.message);
         throw updateError;
@@ -344,7 +345,8 @@ export async function recalculateElo(
             elo_change_before: newEloChange,
           })
           .eq("player_id", playerId)
-          .eq("game_id", gameId);
+          .eq("game_id", gameId)
+          .select();
       if (gamePlayerUpdateError) {
         console.log(
           "Game Players Table Update Error",
