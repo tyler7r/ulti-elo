@@ -47,6 +47,7 @@ export async function recalculateElo(
   gameEditId: string,
   teamId: string
 ) {
+  console.log({ editedGameId, gameEditId, teamId });
   try {
     // Fetch all games for the team, ordered by match date
     const { data: allGames, error: fetchAllGamesError } = await supabase
@@ -71,6 +72,7 @@ export async function recalculateElo(
 
     const editedGame = allGames[editedGameIndex];
     const gamesToRecalculate = allGames.slice(editedGameIndex);
+    console.log("Array of games to recalculate", gamesToRecalculate);
 
     // Fetch the edit history for the edited game
     const { data: gameEditResponse, error: fetchGameEditError } = await supabase
@@ -120,6 +122,8 @@ export async function recalculateElo(
         elo_change: playerData.elo_change_before,
       });
     });
+
+    console.log("player stats before edit", playerStatsBeforeEdit);
 
     const getAddedPlayerStatsBeforeGame = async (playerId: string) => {
       const { data: subsequentGamePlayer, error: fetchSubsequentGameError } =
@@ -191,6 +195,7 @@ export async function recalculateElo(
     ) => {
       if (gameId === editedGameId) {
         const statsBefore = playerStatsBeforeEdit.get(playerId);
+        console.log(statsBefore);
         if (statsBefore) {
           return statsBefore;
         } else {
@@ -388,6 +393,7 @@ export async function recalculateElo(
     });
 
     for (const game of gamesToRecalculate) {
+      console.log("Object loop check", game);
       const { data: squadAGamePlayers, error: fetchSquadAError } =
         await supabase
           .from("game_players")
@@ -407,6 +413,7 @@ export async function recalculateElo(
       const team1Players =
         squadAGamePlayers?.map((sp) => {
           const playerHasCurrentStats = currentPlayerStats.get(sp.player_id);
+          console.log("currentPlayerStats Squad A", playerHasCurrentStats);
           if (playerHasCurrentStats) {
             return { player_id: sp.player_id, ...playerHasCurrentStats };
           } else {
@@ -432,6 +439,7 @@ export async function recalculateElo(
       const team2Players =
         squadBGamePlayers?.map((sp) => {
           const playerHasCurrentStats = currentPlayerStats.get(sp.player_id);
+          console.log("currentPlayerStats Squad B", playerHasCurrentStats);
           if (playerHasCurrentStats) {
             return { player_id: sp.player_id, ...playerHasCurrentStats };
           } else {
