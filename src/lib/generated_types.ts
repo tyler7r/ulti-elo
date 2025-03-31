@@ -400,18 +400,21 @@ export type Database = {
       teams: {
         Row: {
           id: string
+          logo_url: string | null
           name: string
-          owner_id: string | null
+          owner_id: string
         }
         Insert: {
           id?: string
+          logo_url?: string | null
           name: string
-          owner_id?: string | null
+          owner_id: string
         }
         Update: {
           id?: string
+          logo_url?: string | null
           name?: string
-          owner_id?: string | null
+          owner_id?: string
         }
         Relationships: [
           {

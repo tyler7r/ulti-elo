@@ -82,6 +82,7 @@ export type PlayerTeamType = {
 export type TeamType = {
   id: string;
   name: string;
+  logo_url: string | null;
 };
 
 export type PlayerSelectType = {
