@@ -291,20 +291,6 @@ export async function recalculateElo(
         newLossStreak,
       });
 
-      currentPlayerStats.set(playerId, {
-        mu: newMu,
-        sigma: newSigma,
-        elo: newElo,
-        highest_elo: newHighestElo,
-        elo_change: newEloChange,
-        wins: newWins,
-        losses: newLosses,
-        win_percent: newWinPercent,
-        win_streak: newWinStreak,
-        loss_streak: newLossStreak,
-        longest_win_streak: newLongestStreak,
-      });
-
       const { data: playersTableUpdate, error: updateError } = await supabase
         .from("players")
         .update({
@@ -358,6 +344,19 @@ export async function recalculateElo(
         "Game Player Stats after updatePlayerStats",
         newGamePlayerStats
       );
+      currentPlayerStats.set(playerId, {
+        mu: newMu,
+        sigma: newSigma,
+        elo: newElo,
+        highest_elo: newHighestElo,
+        elo_change: newEloChange,
+        wins: newWins,
+        losses: newLosses,
+        win_percent: newWinPercent,
+        win_streak: newWinStreak,
+        loss_streak: newLossStreak,
+        longest_win_streak: newLongestStreak,
+      });
     };
 
     // Revert stats for removed players (using data from previous_game_players_data)
