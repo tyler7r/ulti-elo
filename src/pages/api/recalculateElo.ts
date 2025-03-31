@@ -47,7 +47,6 @@ export async function recalculateElo(
   gameEditId: string,
   teamId: string
 ) {
-  console.log({ editedGameId, gameEditId, teamId });
   try {
     // Fetch all games for the team, ordered by match date
     const { data: allGames, error: fetchAllGamesError } = await supabase
@@ -72,7 +71,6 @@ export async function recalculateElo(
 
     const editedGame = allGames[editedGameIndex];
     const gamesToRecalculate = allGames.slice(editedGameIndex);
-    console.log("Array of games to recalculate", gamesToRecalculate);
 
     // Fetch the edit history for the edited game
     const { data: gameEditResponse, error: fetchGameEditError } = await supabase
@@ -122,8 +120,6 @@ export async function recalculateElo(
         elo_change: playerData.elo_change_before,
       });
     });
-
-    console.log("player stats before edit", playerStatsBeforeEdit);
 
     const getAddedPlayerStatsBeforeGame = async (playerId: string) => {
       const { data: subsequentGamePlayer, error: fetchSubsequentGameError } =
@@ -195,7 +191,7 @@ export async function recalculateElo(
     ) => {
       if (gameId === editedGameId) {
         const statsBefore = playerStatsBeforeEdit.get(playerId);
-        console.log(statsBefore);
+
         if (statsBefore) {
           return statsBefore;
         } else {
@@ -247,6 +243,25 @@ export async function recalculateElo(
       gameId: string,
       currentPlayerStats: CurrentPlayerStats
     ) => {
+      console.log("Update Player Stat Inputs", {
+        playerId,
+        newMu,
+        oldMu,
+        newSigma,
+        oldSigma,
+        newElo,
+        newEloChange,
+        newHighestElo,
+        wins,
+        losses,
+        winStreak,
+        lossStreak,
+        longestWinStreak,
+        winPercent,
+        isWinner,
+        gameId,
+        currentPlayerStats,
+      });
       let newWinStreak = winStreak;
       let newLossStreak = lossStreak;
       let newWins = wins;
@@ -298,25 +313,30 @@ export async function recalculateElo(
         })
         .eq("id", playerId);
       if (updateError) throw updateError;
-      const { error: gamePlayerUpdateError } = await supabase
-        .from("game_players")
-        .update({
-          is_winner: isWinner,
-          elo_before: newElo - newEloChange,
-          elo_after: newElo,
-          mu_before: oldMu,
-          sigma_before: oldSigma,
-          wins_before: wins,
-          losses_before: losses,
-          win_streak_before: winStreak,
-          loss_streak_before: lossStreak,
-          win_percent_before: winPercent,
-          longest_win_streak_before: longestWinStreak,
-          elo_change_before: newEloChange,
-        })
-        .eq("player_id", playerId)
-        .eq("game_id", gameId);
+      const { data: newGamePlayerStats, error: gamePlayerUpdateError } =
+        await supabase
+          .from("game_players")
+          .update({
+            is_winner: isWinner,
+            elo_before: newElo - newEloChange,
+            elo_after: newElo,
+            mu_before: oldMu,
+            sigma_before: oldSigma,
+            wins_before: wins,
+            losses_before: losses,
+            win_streak_before: winStreak,
+            loss_streak_before: lossStreak,
+            win_percent_before: winPercent,
+            longest_win_streak_before: longestWinStreak,
+            elo_change_before: newEloChange,
+          })
+          .eq("player_id", playerId)
+          .eq("game_id", gameId);
       if (gamePlayerUpdateError) throw gamePlayerUpdateError;
+      console.log(
+        "Game Player Stats after updatePlayerStats",
+        newGamePlayerStats
+      );
     };
 
     // Revert stats for removed players (using data from previous_game_players_data)
@@ -393,7 +413,6 @@ export async function recalculateElo(
     });
 
     for (const game of gamesToRecalculate) {
-      console.log("Object loop check", game);
       const { data: squadAGamePlayers, error: fetchSquadAError } =
         await supabase
           .from("game_players")
@@ -413,7 +432,7 @@ export async function recalculateElo(
       const team1Players =
         squadAGamePlayers?.map((sp) => {
           const playerHasCurrentStats = currentPlayerStats.get(sp.player_id);
-          console.log("currentPlayerStats Squad A", playerHasCurrentStats);
+
           if (playerHasCurrentStats) {
             return { player_id: sp.player_id, ...playerHasCurrentStats };
           } else {
@@ -439,7 +458,7 @@ export async function recalculateElo(
       const team2Players =
         squadBGamePlayers?.map((sp) => {
           const playerHasCurrentStats = currentPlayerStats.get(sp.player_id);
-          console.log("currentPlayerStats Squad B", playerHasCurrentStats);
+
           if (playerHasCurrentStats) {
             return { player_id: sp.player_id, ...playerHasCurrentStats };
           } else {
