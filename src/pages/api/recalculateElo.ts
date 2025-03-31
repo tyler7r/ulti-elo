@@ -260,7 +260,6 @@ export async function recalculateElo(
         winPercent,
         isWinner,
         gameId,
-        currentPlayerStats,
       });
       let newWinStreak = winStreak;
       let newLossStreak = lossStreak;
@@ -282,6 +281,16 @@ export async function recalculateElo(
       );
       const newLongestStreak = Math.max(newWinStreak, longestWinStreak);
 
+      console.log("Player calculated stats before database update", {
+        playerId,
+        newWinPercent,
+        newWinStreak,
+        newWins,
+        newLosses,
+        newLongestStreak,
+        newLossStreak,
+      });
+
       currentPlayerStats.set(playerId, {
         mu: newMu,
         sigma: newSigma,
@@ -296,7 +305,7 @@ export async function recalculateElo(
         longest_win_streak: newLongestStreak,
       });
 
-      const { error: updateError } = await supabase
+      const { data: playersTableUpdate, error: updateError } = await supabase
         .from("players")
         .update({
           mu: newMu,
@@ -312,7 +321,11 @@ export async function recalculateElo(
           longest_win_streak: newLongestStreak,
         })
         .eq("id", playerId);
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.log("Players Table Update Error", updateError.message);
+        throw updateError;
+      }
+      console.log("Players Table Update Stats", playersTableUpdate);
       const { data: newGamePlayerStats, error: gamePlayerUpdateError } =
         await supabase
           .from("game_players")
@@ -332,7 +345,13 @@ export async function recalculateElo(
           })
           .eq("player_id", playerId)
           .eq("game_id", gameId);
-      if (gamePlayerUpdateError) throw gamePlayerUpdateError;
+      if (gamePlayerUpdateError) {
+        console.log(
+          "Game Players Table Update Error",
+          gamePlayerUpdateError.message
+        );
+        throw gamePlayerUpdateError;
+      }
       console.log(
         "Game Player Stats after updatePlayerStats",
         newGamePlayerStats
