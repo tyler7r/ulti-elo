@@ -16,7 +16,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { useState } from "react";
-import GamePlayers from "./GamePlayers";
+import GamePlayersContainer from "./GamePlayersContainer";
 
 type GameProps = {
   game: GameHistoryType;
@@ -161,12 +161,7 @@ const Game = ({ game }: GameProps) => {
           </Button>
         )}
       </div>
-      {expanded && (
-        <div className="flex flex-col md:flex-row gap-4 w-full">
-          <GamePlayers squad={game.squadA} isSquadA={true} />
-          <GamePlayers squad={game.squadB} isSquadA={false} />
-        </div>
-      )}
+      {expanded && <GamePlayersContainer game={game} />}
       {editing && <EditGameForm gameId={game.id} />}
       <Snackbar
         open={snackbarOpen}

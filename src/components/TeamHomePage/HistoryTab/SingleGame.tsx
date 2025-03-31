@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/router";
 import { useState } from "react";
-import GamePlayers from "./GamePlayers";
+import GamePlayersContainer from "./GamePlayersContainer";
 
 type SingleGameViewProps = {
   game: GameHistoryType;
@@ -156,24 +156,7 @@ const SingleGameView = ({ game }: SingleGameViewProps) => {
             </Button>
           )}
         </div>
-        {!editing && (
-          <div className="flex flex-col md:flex-row gap-4 mt-4 w-full">
-            <Box flex={1}>
-              <GamePlayers
-                squad={game.squadA}
-                isSquadA={true}
-                singleGame={true}
-              />
-            </Box>
-            <Box flex={1}>
-              <GamePlayers
-                squad={game.squadB}
-                isSquadA={false}
-                singleGame={true}
-              />
-            </Box>
-          </div>
-        )}
+        {!editing && <GamePlayersContainer game={game} singleGame={true} />}
         {editing && (
           <Box mt={4}>
             <EditGameForm gameId={game.id} singleGame={true} />
