@@ -8,6 +8,7 @@ import LockIcon from "@mui/icons-material/Lock";
 import SettingsIcon from "@mui/icons-material/Settings";
 import {
   Alert,
+  Avatar,
   Badge,
   Box,
   Button,
@@ -19,7 +20,10 @@ import {
   Tab,
   Tabs,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
+import Image from "next/image"; // Import the Image component
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
 
@@ -39,6 +43,9 @@ const TeamHomePage = () => {
   const router = useRouter();
   const teamId = router.query.teamId as string;
   const userRole = userRoles.find((role) => role.team_id === teamId);
+
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
   const fetchTeam = async (teamId: string) => {
     const { data, error } = await supabase
@@ -155,16 +162,53 @@ const TeamHomePage = () => {
   };
 
   const handleNavigateToAdmin = () => {
-    router.push(`/team/${teamId}/admin`);
+    void router.push(`/team/${teamId}/admin`);
+  };
+
+  const getTeamAvatarContent = (
+    teamName: string | null | undefined
+  ): string => {
+    if (!teamName) {
+      return "";
+    }
+    const words = teamName.split(" ").filter((word) => word.length > 0);
+    let content = "";
+    if (words.length > 0) {
+      content += words[0].charAt(0).toUpperCase();
+      if (words.length > 1) {
+        content += words[1].charAt(0).toUpperCase();
+      }
+    }
+    return content;
   };
 
   return (
     <Box sx={{ width: "100%" }}>
-      <div className="flex w-full items-center justify-center">
+      <div className="flex w-full items-center justify-center mt-4">
+        {team?.logo_url ? (
+          <Image
+            src={team.logo_url}
+            alt={`${team.name} Logo`}
+            width={40} // Adjust size as needed
+            height={40} // Adjust size as needed
+            className="rounded-full mr-2" // Optional: Add rounded corners with Tailwind CSS
+            onError={(e) => {
+              // Fallback to generic avatar if the team logo fails to load
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        ) : (
+          <Avatar
+            alt={`${team?.name} Avatar`}
+            sx={{ width: 40, height: 40, mr: 2 }}
+          >
+            {getTeamAvatarContent(team?.name)}
+          </Avatar>
+        )}
         <Typography
-          variant="h3"
+          variant={isSmallScreen ? "h4" : "h3"}
           fontWeight={"bold"}
-          sx={{ textAlign: "center", marginTop: "16px" }}
+          sx={{ textAlign: "center" }}
         >
           {team?.name}
         </Typography>
@@ -181,6 +225,7 @@ const TeamHomePage = () => {
         onChange={handleTabChange}
         aria-label="team tabs"
         variant="fullWidth"
+        sx={{ mt: 2 }}
       >
         <Tab label="Leaderboard" />
         <Tab

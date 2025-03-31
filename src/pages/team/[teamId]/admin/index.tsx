@@ -44,7 +44,7 @@ interface TeamPlayer {
 interface Team {
   id: string;
   name: string;
-  //   logo_url: string | null;
+  logo_url: string | null;
 }
 
 const AdminPage = () => {
