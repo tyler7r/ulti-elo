@@ -168,6 +168,7 @@ export type Database = {
       }
       games: {
         Row: {
+          game_weight: string
           id: string
           match_date: string
           squad_a_id: string
@@ -177,6 +178,7 @@ export type Database = {
           team_id: string
         }
         Insert: {
+          game_weight?: string
           id?: string
           match_date?: string
           squad_a_id?: string
@@ -186,6 +188,7 @@ export type Database = {
           team_id: string
         }
         Update: {
+          game_weight?: string
           id?: string
           match_date?: string
           squad_a_id?: string

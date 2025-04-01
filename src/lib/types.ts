@@ -9,6 +9,7 @@ export type GameType = {
   squad_b_score: number;
   squad_a_id: string;
   squad_b_id: string;
+  game_weight: string;
 };
 
 export type GamePlayerType = {
@@ -147,6 +148,7 @@ export type GameHistoryType = {
   squad_b_score: number;
   squad_a_id: string;
   squad_b_id: string;
+  game_weight: string;
   squadA: {
     info: SquadType;
     players: PlayerHistoryType[];
@@ -189,6 +191,7 @@ export interface Game {
   squad_b_id: string;
   squad_a_score: number;
   squad_b_score: number;
+  game_weight: string;
 }
 
 // export interface GameDetails {

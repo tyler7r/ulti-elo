@@ -119,10 +119,20 @@ const Game = ({ game }: GameProps) => {
           </Box>
           <p className="text-sm italic">{dateFormatted}</p>
         </div>
-        <div>
+        <div className="flex flex-col items-center">
           <p className="font-bold text-nowrap">
             {game.squad_a_score} - {game.squad_b_score}
           </p>
+          {game.game_weight && (
+            <Typography
+              variant="caption"
+              color="textSecondary"
+              className="italic"
+            >
+              {game.game_weight.charAt(0).toUpperCase() +
+                game.game_weight.slice(1)}
+            </Typography>
+          )}
         </div>
       </div>
       <div className="flex justify-between mt-4">

@@ -9,10 +9,21 @@ import {
   Player,
 } from "@/lib/types";
 import CheckIcon from "@mui/icons-material/Check";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import UndoIcon from "@mui/icons-material/Undo";
-import { Alert, Button, TextField, Typography } from "@mui/material";
+import {
+  Alert,
+  Button,
+  ButtonGroup,
+  FormControl,
+  FormLabel,
+  IconButton,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import GameWeightModal from "../Utils/GameWeightModal";
 import EditGamePlayers from "./EditGamePlayers";
 import EditOverlappingPlayers from "./EditOverlappingPlayers";
 
@@ -34,6 +45,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
   const [squadBPlayers, setSquadBPlayers] = useState<GamePlayerWithPlayer[]>(
     []
   );
+  const [gameWeight, setGameWeight] = useState<string>("standard");
   const [overlappingPlayers, setOverlappingPlayers] = useState<Player[]>([]);
   const squadAIDs = squadAPlayers.map((p) => p.id);
   const squadBIDs = squadBPlayers.map((p) => p.id);
@@ -46,6 +58,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
     message: null,
     severity: "error",
   });
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchGameData = async () => {
@@ -105,6 +118,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
           setSquadBScore(data.game.squad_b_score);
           setSquadAPlayers(data.squadA.players);
           setSquadBPlayers(data.squadB.players);
+          setGameWeight(data.game.game_weight);
           setLoading(false);
         } catch (err) {
           console.error("Error in fetchGameData:", err);
@@ -124,6 +138,20 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
     const overlapping = getEditOverlappingPlayers(squadAPlayers, squadBPlayers);
     setOverlappingPlayers(overlapping);
   }, [squadAPlayers, squadBPlayers]);
+
+  const handleWeightChange = (
+    gameType: "casual" | "standard" | "competitive"
+  ) => {
+    setGameWeight(gameType);
+  };
+
+  const handleOpenInfoModal = () => {
+    setIsInfoModalOpen(true);
+  };
+
+  const handleCloseInfoModal = () => {
+    setIsInfoModalOpen(false);
+  };
 
   const handleSave = async () => {
     setLoading(true);
@@ -159,6 +187,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
           squadBPlayers: squadBPlayers.map((p) => p.id),
           teamId: gameDetails.game.team_id,
           userId: user.id,
+          weight: gameWeight,
         }),
       });
 
@@ -193,6 +222,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
       setSquadBScore(gameDetails.game.squad_b_score);
       setSquadAPlayers(gameDetails.squadA.players);
       setSquadBPlayers(gameDetails.squadB.players);
+      setGameWeight(gameDetails.game.game_weight);
     }
   };
 
@@ -232,12 +262,14 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
     const sameSquadAScore = gameDetails?.game.squad_a_score === squadAScore;
     const sameSquadBScore = gameDetails?.game.squad_b_score === squadBScore;
     const hasOverlap = overlappingPlayers.length > 0;
+    const isSameWeight = gameDetails?.game.game_weight === gameWeight;
 
     if (
       (sameSquadAPlayers &&
         sameSquadBPlayers &&
         sameSquadAScore &&
-        sameSquadBScore) ||
+        sameSquadBScore &&
+        isSameWeight) ||
       loading ||
       hasOverlap
     ) {
@@ -253,6 +285,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
     squadAScore,
     squadBScore,
     overlappingPlayers,
+    gameWeight,
   ]);
 
   if (loading)
@@ -336,6 +369,55 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
           singleGame={singleGame}
         />
       </div>
+      <FormControl component="fieldset" sx={{ marginBottom: 2 }}>
+        <div className="flex items-center">
+          <FormLabel sx={{ fontWeight: "bold", paddingY: 1 }}>
+            Game Weight
+          </FormLabel>
+          <IconButton
+            onClick={handleOpenInfoModal}
+            size="small"
+            aria-label="game type info"
+          >
+            <InfoOutlinedIcon fontSize="small" />
+          </IconButton>
+        </div>
+        <ButtonGroup
+          aria-label="game type button group"
+          fullWidth
+          sx={{ marginTop: 1 }}
+        >
+          <Button
+            onClick={() => handleWeightChange("casual")}
+            color={gameWeight === "casual" ? "secondary" : "inherit"}
+            variant={gameWeight === "casual" ? "contained" : "text"}
+            size="small"
+            sx={{ fontWeight: "bold" }}
+          >
+            Casual
+          </Button>
+          <Button
+            onClick={() => handleWeightChange("standard")}
+            color={gameWeight === "standard" ? "secondary" : "inherit"}
+            variant={gameWeight === "standard" ? "contained" : "text"}
+            size="small"
+            sx={{ fontWeight: "bold" }}
+          >
+            Standard
+          </Button>
+          <Button
+            onClick={() => handleWeightChange("competitive")}
+            color={gameWeight === "competitive" ? "secondary" : "inherit"}
+            variant={gameWeight === "competitive" ? "contained" : "text"}
+            size="small"
+            sx={{ fontWeight: "bold" }}
+          >
+            Competitive
+          </Button>
+        </ButtonGroup>
+      </FormControl>
+      {/* Info Modal */}
+      <GameWeightModal open={isInfoModalOpen} onClose={handleCloseInfoModal} />
       {overlappingPlayers.length > 0 && (
         <EditOverlappingPlayers
           squadA={gameDetails.squadA}

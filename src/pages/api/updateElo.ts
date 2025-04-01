@@ -6,6 +6,9 @@ import { rate, Rating } from "ts-trueskill";
 const SCORE_SCALING_FACTOR = 0.05;
 const UNDERDOG_SCALING_FACTOR = 0.15;
 
+const HEAVY_WEIGHT = 1.25;
+const LIGHT_WEIGHT = 0.75;
+
 export async function updateElo(
   gameId: string,
   sqA: GameFormSquadType,
@@ -13,6 +16,26 @@ export async function updateElo(
   teamId: string
 ): Promise<void> {
   try {
+    const { data: gameData, error: fetchGameError } = await supabase
+      .from("games")
+      .select("game_weight")
+      .eq("id", gameId)
+      .single();
+
+    if (fetchGameError || !gameData) {
+      console.error("Error fetching game details:", fetchGameError);
+      throw new Error("Failed to fetch game details.");
+    }
+
+    const gameType = gameData;
+    let gameWeight = 1; // Default weight if game_type is not specified or recognized
+
+    if (gameType.game_weight === "heavy") {
+      gameWeight = HEAVY_WEIGHT;
+    } else if (gameType.game_weight === "light") {
+      gameWeight = LIGHT_WEIGHT;
+    }
+
     const squadAPlayerIDs = sqA.players.map((p) => p.id);
     const squadBPlayerIDs = sqB.players.map((p) => p.id);
     // Fetch player ratings for Squad A
@@ -112,9 +135,11 @@ export async function updateElo(
 
         const isWinner = sqA.score > sqB.score;
 
-        const eloChange = isWinner
-          ? Math.round(baseEloChange * scoreInfluence * underdogInfluence)
-          : Math.round((baseEloChange * scoreInfluence) / underdogInfluence);
+        const eloChange = Math.round(
+          (isWinner
+            ? baseEloChange * scoreInfluence * underdogInfluence
+            : (baseEloChange * scoreInfluence) / underdogInfluence) * gameWeight
+        );
 
         // Modify 'mu' directly based on score influence and rating difference
         const newElo = p.elo + eloChange; // ✅ Compute Elo After
@@ -169,9 +194,11 @@ export async function updateElo(
 
         const isWinner = sqB.score > sqB.score;
 
-        const eloChange = isWinner
-          ? Math.round(baseEloChange * scoreInfluence * underdogInfluence)
-          : Math.round((baseEloChange * scoreInfluence) / underdogInfluence);
+        const eloChange = Math.round(
+          (isWinner
+            ? baseEloChange * scoreInfluence * underdogInfluence
+            : (baseEloChange * scoreInfluence) / underdogInfluence) * gameWeight
+        );
 
         // Modify 'mu' directly based on score influence and rating difference
         const newElo = p.elo + eloChange; // ✅ Compute Elo After

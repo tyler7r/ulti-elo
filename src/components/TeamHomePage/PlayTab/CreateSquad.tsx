@@ -140,14 +140,9 @@ const CreateSquad = ({
               }}
             >
               <div className="flex flex-col w-full">
-                <Typography variant="h5" color="primary">
+                <Typography variant="h5" color="primary" fontWeight={"bold"}>
                   Create New Squad
                 </Typography>
-                {!error && !success && (
-                  <Typography variant="body2" fontWeight="bold">
-                    *Players Can Not Be in Multiple Active Squads*
-                  </Typography>
-                )}
               </div>
               <IconButton
                 onClick={onClose}

@@ -114,11 +114,6 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
           Global Leaderboard
         </Typography>
       )}
-      <Typography variant="caption" color="secondary" fontWeight="bold">
-        Note: Think of your first 10-15 games as your placement games, you will
-        likely see large ELO jumps with each game but as you play more this
-        measure will start to stabilize. Scroll right for more stats!
-      </Typography>
       <Paper
         sx={{
           maxWidth: "100%",

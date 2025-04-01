@@ -86,6 +86,15 @@ const CreatePlayer = ({ onClose, openPlayerModal }: CreatePlayerProps) => {
     setLoading(false);
   };
 
+  useEffect(() => {
+    if (!openPlayerModal) {
+      setName("");
+      setSelectedTeams([]);
+      setSuccess(false);
+      setLoading(false);
+    }
+  }, [openPlayerModal]);
+
   return (
     <Modal
       open={openPlayerModal}
@@ -116,7 +125,7 @@ const CreatePlayer = ({ onClose, openPlayerModal }: CreatePlayerProps) => {
                 alignItems: "center",
               }}
             >
-              <Typography color="primary" variant="h5">
+              <Typography color="primary" variant="h5" fontWeight={"bold"}>
                 Create New Player
               </Typography>
               <IconButton

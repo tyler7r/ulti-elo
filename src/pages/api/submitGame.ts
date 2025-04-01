@@ -6,9 +6,15 @@ type submitGameProps = {
   teamId: string;
   sqA: GameFormSquadType;
   sqB: GameFormSquadType;
+  gameWeight: string;
 };
 
-export async function submitGame({ teamId, sqA, sqB }: submitGameProps) {
+export async function submitGame({
+  teamId,
+  sqA,
+  sqB,
+  gameWeight,
+}: submitGameProps) {
   try {
     const { data: game, error } = await supabase
       .from("games")
@@ -19,6 +25,7 @@ export async function submitGame({ teamId, sqA, sqB }: submitGameProps) {
           squad_b_score: sqB.score,
           squad_a_id: sqA.id,
           squad_b_id: sqB.id,
+          game_weight: gameWeight,
         },
       ])
       .select("id")
