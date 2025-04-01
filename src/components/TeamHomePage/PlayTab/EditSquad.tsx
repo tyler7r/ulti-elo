@@ -235,7 +235,7 @@ const EditSquad = ({
               }}
             >
               <div className="flex flex-col w-full">
-                <Typography variant="h5" color="primary">
+                <Typography variant="h5" color="primary" fontWeight={"bold"}>
                   Edit Squad
                 </Typography>
               </div>

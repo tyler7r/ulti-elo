@@ -30,6 +30,7 @@ export const getGameHistory = async ({
       squad_b_id,
       squad_a_score,
       squad_b_score,
+      game_weight,
       squadA: squads!games_squad_a_id_fkey(*), 
       squadB: squads!games_squad_b_id_fkey(*),
       game_players (
@@ -68,6 +69,7 @@ export const getGameHistory = async ({
     squad_b_score: game.squad_b_score,
     squad_a_id: game.squad_a_id,
     squad_b_id: game.squad_b_id,
+    game_weight: game.game_weight,
     squadA: {
       info: {
         id: game.squad_a_id,

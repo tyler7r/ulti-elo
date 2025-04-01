@@ -1,21 +1,21 @@
 import { GamePlayerWithPlayer, Squad } from "@/lib/types";
 import { Delete as DeleteIcon } from "@mui/icons-material";
 import {
+  Autocomplete,
   FormControl,
   IconButton,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
   useTheme,
 } from "@mui/material";
+import { useState } from "react";
 
 type EditGamePlayersProps = {
   squad: Squad;
@@ -46,10 +46,25 @@ const EditGamePlayers = ({
   const headerBackgroundColor = isDarkMode ? "grey.700" : "grey.300";
   const rowBackgroundColor = isDarkMode ? "grey.900" : "grey.100";
   const rowHoverBackgroundColor = isDarkMode ? "grey.800" : "grey.200";
+  const [inputValue, setInputValue] = useState("");
+  const [selectedValue, setSelectedValue] =
+    useState<GamePlayerWithPlayer | null>(null);
 
   if (players.length === 0) {
     return <p>No players found for {name}</p>;
   }
+
+  const availablePlayers = allPlayers.filter(
+    (player) => !squadPlayerIDs.includes(player.id)
+  );
+
+  const handleAddPlayer = (player: GamePlayerWithPlayer | null) => {
+    if (player) {
+      addPlayerToSquad(squad.id, player.id);
+      setSelectedValue(null); // Clear the selected value after adding
+      setInputValue(""); // Clear the input value as well
+    }
+  };
 
   return (
     <div className="mt-2 flex flex-col w-full">
@@ -166,28 +181,25 @@ const EditGamePlayers = ({
         </TableContainer>
       </Paper>
 
-      <FormControl fullWidth sx={{ marginTop: 2 }}>
-        <InputLabel id="add-player-a-label">Add Player to {name}</InputLabel>
-        <Select
-          labelId="add-player-a-label"
-          id="add-player-a"
-          value=""
-          onChange={(e) => {
-            const value = e.target.value as string;
-            if (value) {
-              addPlayerToSquad(squad.id, value);
-              (e.target as HTMLSelectElement).value = "";
-            }
+      <FormControl fullWidth sx={{ marginTop: 2, marginBottom: 1 }}>
+        <Autocomplete
+          size="small"
+          value={selectedValue}
+          inputValue={inputValue}
+          onChange={(_event, newValue) => {
+            setSelectedValue(newValue);
+            handleAddPlayer(newValue);
           }}
-        >
-          {allPlayers
-            .filter((player) => !squadPlayerIDs.includes(player.id))
-            .map((player) => (
-              <MenuItem key={player.id} value={player.id}>
-                {player.name}
-              </MenuItem>
-            ))}
-        </Select>
+          onInputChange={(_event, newInputValue) => {
+            setInputValue(newInputValue);
+          }}
+          id={`add-player-autocomplete-${name.toLowerCase().replace(" ", "-")}`}
+          options={availablePlayers}
+          getOptionLabel={(option) => option.name}
+          renderInput={(params) => (
+            <TextField {...params} label={`Add Player to ${name}`} />
+          )}
+        />
       </FormControl>
     </div>
   );

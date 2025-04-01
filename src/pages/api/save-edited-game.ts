@@ -18,6 +18,7 @@ export default async function handler(
       squadBPlayers,
       teamId,
       userId,
+      weight,
     } = req.body;
 
     if (
@@ -28,7 +29,8 @@ export default async function handler(
       squadAScore === undefined ||
       squadBScore === undefined ||
       !Array.isArray(squadAPlayers) ||
-      !Array.isArray(squadBPlayers)
+      !Array.isArray(squadBPlayers) ||
+      !weight
     ) {
       return res.status(400).json({ error: "Missing required parameters" });
     }
@@ -73,6 +75,7 @@ export default async function handler(
           squad_b_id: squadBId,
           squad_a_score: squadAScore,
           squad_b_score: squadBScore,
+          game_weight: weight,
         })
         .eq("id", gameId);
 

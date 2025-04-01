@@ -103,7 +103,7 @@ const RetireSquad = ({
               }}
             >
               <div className="flex flex-col w-full">
-                <Typography variant="h5" color="primary">
+                <Typography variant="h5" color="primary" fontWeight={"bold"}>
                   Retire {squadName}
                 </Typography>
               </div>

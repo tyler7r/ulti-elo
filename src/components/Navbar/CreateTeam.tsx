@@ -243,7 +243,7 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
                 alignItems: "center",
               }}
             >
-              <Typography variant="h5" color="primary">
+              <Typography variant="h5" color="primary" fontWeight={"bold"}>
                 Create New Team
               </Typography>
               <IconButton

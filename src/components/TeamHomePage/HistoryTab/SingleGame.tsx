@@ -128,7 +128,7 @@ const SingleGameView = ({ game }: SingleGameViewProps) => {
             </Box>
             <Typography className="text-sm italic">{dateFormatted}</Typography>
           </div>
-          <div>
+          <div className="flex flex-col items-center">
             <Typography
               fontWeight={"bold"}
               sx={{ textWrap: "nowrap" }}
@@ -136,6 +136,16 @@ const SingleGameView = ({ game }: SingleGameViewProps) => {
             >
               {game.squad_a_score} - {game.squad_b_score}
             </Typography>
+            {game.game_weight && (
+              <Typography
+                variant="caption"
+                color="textSecondary"
+                fontStyle={"italic"}
+              >
+                {game.game_weight.charAt(0).toUpperCase() +
+                  game.game_weight.slice(1)}
+              </Typography>
+            )}
           </div>
         </div>
         <div className="flex justify-end mt-4">
