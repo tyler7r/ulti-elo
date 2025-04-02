@@ -110,7 +110,6 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
         `
           )
           .or("wins.gt.0, losses.gt.0")
-          .order("win_streak", { ascending: false }) // Order by win streak initially
           .order(sortBy, { ascending: sortDirection === "asc" }); // Then by the selected sort
 
         if (error) {
@@ -175,7 +174,8 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            maxWidth: 450,
+            width: "90%",
+            maxWidth: 600,
             bgcolor: "background.paper",
             border: "1px solid #000",
             boxShadow: 24,
