@@ -214,6 +214,7 @@ export interface GamePlayerWithPlayer extends Player {
   is_winner?: boolean;
   elo_before?: number;
   elo_after?: number;
+  player_id?: string;
 }
 
 export interface Squad {
