@@ -69,7 +69,7 @@ const GamePlayersContainer = ({
             await supabase
               .from("game_players")
               .select(
-                "player_id, is_winner, elo_before, elo_after, players(name)"
+                "player_id, is_winner, elo_before, elo_after, player_teams(players(name))"
               )
               .eq("game_id", game.id)
               .eq("squad_id", game.squad_a_id);
@@ -86,7 +86,7 @@ const GamePlayersContainer = ({
             await supabase
               .from("game_players")
               .select(
-                "player_id, is_winner, elo_before, elo_after, players(name)"
+                "player_id, is_winner, elo_before, elo_after, player_teams(players(name))"
               )
               .eq("game_id", game.id)
               .eq("squad_id", game.squad_b_id);
@@ -101,7 +101,7 @@ const GamePlayersContainer = ({
           }
 
           const sqAPlayers = SquadAGamePlayers.map((p) => ({
-            name: p.players.name,
+            name: p.player_teams.players.name,
             id: p.player_id,
             elo_before: p.elo_before,
             elo_after: p.elo_after,
@@ -109,7 +109,7 @@ const GamePlayersContainer = ({
           }));
 
           const sqBPlayers = SquadBGamePlayers.map((p) => ({
-            name: p.players.name,
+            name: p.player_teams.players.name,
             id: p.player_id,
             elo_before: p.elo_before,
             elo_after: p.elo_after,

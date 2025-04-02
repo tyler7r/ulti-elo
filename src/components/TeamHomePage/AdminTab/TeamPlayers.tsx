@@ -19,27 +19,26 @@ import {
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 
-interface TeamPlayer {
+type TeamPlayer = {
   player_id: string;
+  elo: number;
   player: {
-    elo: number;
     name: string;
   };
-}
+};
 
-interface Player {
+type Player = {
   id: string;
   name: string;
-  elo: number;
-}
+};
 
-interface TeamPlayersTabProps {
+type TeamPlayersTabProps = {
   teamId: string;
   teamPlayers: TeamPlayer[];
   onPlayersUpdated: () => void;
   setSnackbarMessage: (message: string) => void;
   setSnackbarOpen: (open: boolean) => void;
-}
+};
 
 const TeamPlayersTab = ({
   teamId,
@@ -61,7 +60,7 @@ const TeamPlayersTab = ({
     setLoadingAvailablePlayers(true);
     const { data: allPlayersData, error: allPlayersError } = await supabase
       .from("players")
-      .select("*");
+      .select("id, name");
     if (allPlayersError) {
       console.error("Error fetching all players:", allPlayersError.message);
       setSnackbarMessage(
@@ -160,7 +159,7 @@ const TeamPlayersTab = ({
         }}
         renderOption={(props, option) => (
           <li {...props} key={option.id}>
-            {option.name} (Elo: {option.elo})
+            {option.name}
           </li>
         )}
         loading={loadingAvailablePlayers}
@@ -195,7 +194,7 @@ const TeamPlayersTab = ({
             </ListItemAvatar>
             <ListItemText
               primary={player.player.name || "Unknown Player"}
-              secondary={`ELO: ${player.player.elo}`}
+              secondary={`ELO: ${player.elo}`}
             />
             <Box sx={{ position: "absolute", right: 16 }}>
               <IconButton

@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { PlayerType } from "@/lib/types";
+import { Player } from "@/lib/types";
 import CloseIcon from "@mui/icons-material/Close";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import DeleteIcon from "@mui/icons-material/Delete"; // Import the delete icon
@@ -29,8 +29,8 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
   const router = useRouter();
 
   const [name, setName] = useState("");
-  const [players, setPlayers] = useState<PlayerType[]>([]);
-  const [selectedPlayers, setSelectedPlayers] = useState<PlayerType[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchingPlayers, setFetchingPlayers] = useState(true);
   const [error, setError] = useState("");
@@ -42,9 +42,11 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
   // Fetch teams from Supabase
   useEffect(() => {
     const fetchPlayers = async () => {
-      const { data, error } = await supabase.from("players").select("*");
+      const { data, error } = await supabase.from("players").select(`name, id`);
       if (error) console.error("Error fetching players:", error);
-      else setPlayers(data);
+      else {
+        setPlayers(data);
+      }
       setFetchingPlayers(false);
     };
     fetchPlayers();
@@ -300,7 +302,7 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
                 loading={fetchingPlayers}
                 renderOption={(props, option) => (
                   <li {...props} key={option.id}>
-                    {option.name} (Elo: {option.elo})
+                    {option.name}
                   </li>
                 )}
                 renderInput={(params) => (

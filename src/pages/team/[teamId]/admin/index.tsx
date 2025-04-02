@@ -35,9 +35,9 @@ interface AdminRequest {
 
 interface TeamPlayer {
   player_id: string;
+  elo: number;
   player: {
     name: string;
-    elo: number;
   };
 }
 
@@ -105,7 +105,8 @@ const AdminPage = () => {
       .select(
         `
         player_id,
-        player:players (name, elo)
+        elo,
+        player:players (name)
       `
       )
       .order("player(name)", { ascending: true })

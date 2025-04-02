@@ -91,55 +91,85 @@ export type Database = {
         Row: {
           elo_after: number
           elo_before: number
+          elo_change_after: number
           elo_change_before: number
           game_id: string
+          highest_elo_after: number
           highest_elo_before: number
           is_winner: boolean
+          longest_win_streak_after: number
           longest_win_streak_before: number
+          loss_streak_after: number
           loss_streak_before: number
+          losses_after: number
           losses_before: number
+          mu_after: number
           mu_before: number
           player_id: string
+          sigma_after: number
           sigma_before: number
           squad_id: string
+          win_percent_after: number
           win_percent_before: number
+          win_streak_after: number
           win_streak_before: number
+          wins_after: number
           wins_before: number
         }
         Insert: {
           elo_after?: number
           elo_before?: number
+          elo_change_after?: number
           elo_change_before?: number
           game_id?: string
+          highest_elo_after?: number
           highest_elo_before?: number
           is_winner?: boolean
+          longest_win_streak_after?: number
           longest_win_streak_before?: number
+          loss_streak_after?: number
           loss_streak_before?: number
+          losses_after?: number
           losses_before?: number
+          mu_after?: number
           mu_before?: number
           player_id?: string
+          sigma_after?: number
           sigma_before?: number
           squad_id: string
+          win_percent_after?: number
           win_percent_before?: number
+          win_streak_after?: number
           win_streak_before?: number
+          wins_after?: number
           wins_before?: number
         }
         Update: {
           elo_after?: number
           elo_before?: number
+          elo_change_after?: number
           elo_change_before?: number
           game_id?: string
+          highest_elo_after?: number
           highest_elo_before?: number
           is_winner?: boolean
+          longest_win_streak_after?: number
           longest_win_streak_before?: number
+          loss_streak_after?: number
           loss_streak_before?: number
+          losses_after?: number
           losses_before?: number
+          mu_after?: number
           mu_before?: number
           player_id?: string
+          sigma_after?: number
           sigma_before?: number
           squad_id?: string
+          win_percent_after?: number
           win_percent_before?: number
+          win_streak_after?: number
           win_streak_before?: number
+          wins_after?: number
           wins_before?: number
         }
         Relationships: [
@@ -154,7 +184,7 @@ export type Database = {
             foreignKeyName: "game_players_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
-            referencedRelation: "players"
+            referencedRelation: "player_teams"
             referencedColumns: ["id"]
           },
           {
@@ -223,16 +253,52 @@ export type Database = {
       }
       player_teams: {
         Row: {
+          elo: number
+          elo_change: number
+          highest_elo: number
+          id: string
+          longest_win_streak: number
+          loss_streak: number
+          losses: number
+          mu: number
           player_id: string
+          sigma: number
           team_id: string
+          win_percent: number
+          win_streak: number
+          wins: number
         }
         Insert: {
+          elo?: number
+          elo_change?: number
+          highest_elo?: number
+          id?: string
+          longest_win_streak?: number
+          loss_streak?: number
+          losses?: number
+          mu?: number
           player_id: string
+          sigma?: number
           team_id: string
+          win_percent?: number
+          win_streak?: number
+          wins?: number
         }
         Update: {
+          elo?: number
+          elo_change?: number
+          highest_elo?: number
+          id?: string
+          longest_win_streak?: number
+          loss_streak?: number
+          losses?: number
+          mu?: number
           player_id?: string
+          sigma?: number
           team_id?: string
+          win_percent?: number
+          win_streak?: number
+          wins?: number
         }
         Relationships: [
           {
@@ -253,49 +319,16 @@ export type Database = {
       }
       players: {
         Row: {
-          elo: number
-          elo_change: number
-          highest_elo: number
           id: string
-          longest_win_streak: number
-          loss_streak: number
-          losses: number
-          mu: number
           name: string
-          sigma: number
-          win_percent: number
-          win_streak: number
-          wins: number
         }
         Insert: {
-          elo?: number
-          elo_change?: number
-          highest_elo?: number
           id?: string
-          longest_win_streak?: number
-          loss_streak?: number
-          losses?: number
-          mu?: number
           name: string
-          sigma?: number
-          win_percent?: number
-          win_streak?: number
-          wins?: number
         }
         Update: {
-          elo?: number
-          elo_change?: number
-          highest_elo?: number
           id?: string
-          longest_win_streak?: number
-          loss_streak?: number
-          losses?: number
-          mu?: number
           name?: string
-          sigma?: number
-          win_percent?: number
-          win_streak?: number
-          wins?: number
         }
         Relationships: []
       }
@@ -320,7 +353,7 @@ export type Database = {
             foreignKeyName: "squad_players_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
-            referencedRelation: "players"
+            referencedRelation: "player_teams"
             referencedColumns: ["id"]
           },
           {

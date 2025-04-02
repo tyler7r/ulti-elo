@@ -1,4 +1,3 @@
-// lib/elo-utils.ts
 import { getTeamSizeCounteractionFactor } from "@/lib/getCounteractionFactor";
 import { supabase } from "@/lib/supabase";
 import { GamePlayerType } from "@/lib/types"; // Adjust path if necessary
@@ -46,9 +45,9 @@ const UNDERDOG_SCALING_FACTOR = 0.15;
 const HEAVY_WEIGHT = 1.25;
 const LIGHT_WEIGHT = 0.75;
 
-export async function recalculateElo(
+export async function recalculateElo2(
   editedGameId: string,
-  gameEditId: string,
+  gameEditId: string | null, // Allow null for gameEditId
   teamId: string
 ) {
   try {
@@ -63,67 +62,149 @@ export async function recalculateElo(
 
     if (fetchAllGamesError) throw fetchAllGamesError;
 
-    // Find the index of the edited game
-    const editedGameIndex = allGames.findIndex(
-      (game) => game.id === editedGameId
-    );
+    // Find the index of the starting game for recalculation
+    const startIndex = allGames.findIndex((game) => game.id === editedGameId);
+    const editedGame = allGames[startIndex];
 
-    if (editedGameIndex === -1) {
-      console.warn(`Edited game with ID ${editedGameId} not found.`);
+    if (startIndex === -1) {
+      console.warn(
+        `Starting game with ID ${editedGameId} not found for recalculation.`
+      );
       return;
     }
 
-    const editedGame = allGames[editedGameIndex];
-    const gamesToRecalculate = allGames.slice(editedGameIndex);
+    const gamesToRecalculate = allGames.slice(startIndex);
 
-    // Fetch the edit history for the edited game
-    const { data: gameEditResponse, error: fetchGameEditError } = await supabase
-      .from("game_edits")
-      .select("*")
-      .eq("id", gameEditId)
-      .single();
+    const playerStatsBeforeRecalculation: CurrentPlayerStats = new Map();
 
-    let gameEdit: GameEditRow | null = null;
-    if (gameEditResponse) {
-      gameEdit = gameEditResponse as GameEditRow;
-    } else if (fetchGameEditError && fetchGameEditError.code !== "PGRST116") {
-      console.error("Error fetching game edit:", fetchGameEditError);
-      return;
-    }
+    if (gameEditId) {
+      // Fetch the edit history for the edited game
+      const { data: gameEditResponse, error: fetchGameEditError } =
+        await supabase
+          .from("game_edits")
+          .select("*")
+          .eq("id", gameEditId)
+          .single();
 
-    // Fetch the state of players before the edited game
-    const previousGamePlayersData = gameEdit?.previous_game_players_data || [];
-    const playerStatsBeforeEdit = new Map<
-      string,
-      {
-        mu: number;
-        sigma: number;
-        elo: number;
-        wins: number;
-        losses: number;
-        win_streak: number;
-        loss_streak: number;
-        longest_win_streak: number;
-        highest_elo: number;
-        win_percent: number;
-        elo_change: number;
+      let gameEdit: GameEditRow | null = null;
+      if (gameEditResponse) {
+        gameEdit = gameEditResponse as GameEditRow;
+      } else if (fetchGameEditError && fetchGameEditError.code !== "PGRST116") {
+        console.error("Error fetching game edit:", fetchGameEditError);
+        return;
       }
-    >();
-    previousGamePlayersData.forEach((playerData) => {
-      playerStatsBeforeEdit.set(playerData.player_id, {
-        mu: playerData.mu_before,
-        sigma: playerData.sigma_before,
-        elo: playerData.elo_before,
-        wins: playerData.wins_before,
-        losses: playerData.losses_before,
-        win_streak: playerData.win_streak_before,
-        loss_streak: playerData.loss_streak_before,
-        longest_win_streak: playerData.longest_win_streak_before,
-        highest_elo: playerData.highest_elo_before,
-        win_percent: playerData.win_percent_before,
-        elo_change: playerData.elo_change_before,
+
+      const currentGamePlayersForEditedGame = await supabase
+        .from("game_players")
+        .select("*")
+        .eq("game_id", editedGameId);
+      const currentPlayersInEditedGame =
+        currentGamePlayersForEditedGame.data?.map((gp) => gp.player_id) || [];
+      const originalPlayers =
+        gameEdit?.previous_game_players_data?.map((gp) => gp.player_id) || [];
+      const removedPlayers = originalPlayers.filter(
+        (playerId) => !currentPlayersInEditedGame.includes(playerId)
+      );
+
+      for (const removedPlayerId of removedPlayers) {
+        const beforeData = gameEdit?.previous_game_players_data?.find(
+          (gp) => gp.player_id === removedPlayerId
+        );
+        if (beforeData) {
+          const { error: updatePlayerError } = await supabase
+            .from("player_teams")
+            .update({
+              elo: beforeData.elo_before,
+              mu: beforeData.mu_before,
+              sigma: beforeData.sigma_before,
+              wins: beforeData.wins_before,
+              losses: beforeData.losses_before,
+              win_streak: beforeData.win_streak_before,
+              loss_streak: beforeData.loss_streak_before,
+              win_percent: beforeData.win_percent_before,
+              highest_elo: beforeData.highest_elo_before,
+              longest_win_streak: beforeData.longest_win_streak_before,
+              elo_change: beforeData.elo_change_before,
+            })
+            .eq("id", removedPlayerId);
+          if (updatePlayerError) {
+            console.error("Error reverting player stats:", updatePlayerError);
+          }
+        }
+      }
+
+      // Fetch the state of players before the edited game
+      const previousGamePlayersData =
+        gameEdit?.previous_game_players_data || [];
+      previousGamePlayersData.forEach((playerData) => {
+        playerStatsBeforeRecalculation.set(playerData.player_id, {
+          mu: playerData.mu_before,
+          sigma: playerData.sigma_before,
+          elo: playerData.elo_before,
+          wins: playerData.wins_before,
+          losses: playerData.losses_before,
+          win_streak: playerData.win_streak_before,
+          loss_streak: playerData.loss_streak_before,
+          longest_win_streak: playerData.longest_win_streak_before,
+          highest_elo: playerData.highest_elo_before,
+          win_percent: playerData.win_percent_before,
+          elo_change: playerData.elo_change_before,
+        });
       });
-    });
+    } else {
+      // If gameEditId is null (triggered by deletion), we need to get the player stats as they were *after* the game *before* the one at `startIndex`.
+      const {
+        data: previousGamePlayers,
+        error: fetchPreviousGamePlayersError,
+      } = await supabase
+        .from("game_players")
+        .select("*")
+        .eq("game_id", editedGame.id);
+
+      if (fetchPreviousGamePlayersError) {
+        console.error(
+          "Error fetching game players for the previous game:",
+          fetchPreviousGamePlayersError
+        );
+        return;
+      }
+
+      previousGamePlayers.forEach((playerData) => {
+        playerStatsBeforeRecalculation.set(playerData.player_id, {
+          mu: playerData.mu_before,
+          sigma: playerData.sigma_before,
+          elo: playerData.elo_before,
+          wins: playerData.wins_before,
+          losses: playerData.losses_before,
+          win_streak: playerData.win_streak_before,
+          loss_streak: playerData.loss_streak_before,
+          longest_win_streak: playerData.longest_win_streak_before,
+          highest_elo: playerData.highest_elo_before,
+          win_percent: playerData.win_percent_before,
+          elo_change: playerData.elo_change_before,
+        });
+      });
+
+      // 4. Delete the game record from the games table
+      const { error: deleteGameError } = await supabase
+        .from("games")
+        .delete()
+        .eq("id", editedGame.id);
+
+      if (deleteGameError) {
+        console.error("Error deleting game:", deleteGameError);
+      }
+
+      // 5. Delete the game_players records associated with the game
+      const { error: deleteGamePlayers } = await supabase
+        .from("game_players")
+        .delete()
+        .eq("game_id", editedGame.id);
+
+      if (deleteGamePlayers) {
+        console.error("Error deleting game players:", deleteGamePlayers);
+      }
+    }
 
     const getAddedPlayerStatsBeforeGame = async (playerId: string) => {
       const { data: subsequentGamePlayer, error: fetchSubsequentGameError } =
@@ -187,14 +268,13 @@ export async function recalculateElo(
       }
     };
 
-    // Function to get player stats before a game
     const getPlayerStatsBeforeGame = async (
       gameId: string,
-      playerId: string,
-      currentPlayerStats: CurrentPlayerStats
+      playerId: string
+      // currentPlayerStats: CurrentPlayerStats
     ) => {
       if (gameId === editedGameId) {
-        const statsBefore = playerStatsBeforeEdit.get(playerId);
+        const statsBefore = playerStatsBeforeRecalculation.get(playerId);
 
         if (statsBefore) {
           return statsBefore;
@@ -203,12 +283,11 @@ export async function recalculateElo(
           const addedPlayerStats = await getAddedPlayerStatsBeforeGame(
             playerId
           );
-          currentPlayerStats.set(playerId, addedPlayerStats);
+          processingPlayerStats.set(playerId, addedPlayerStats);
           return;
         }
       }
-      // For subsequent games, use the stats calculated from the previous game
-      const currentStats = currentPlayerStats.get(playerId);
+      const currentStats = processingPlayerStats.get(playerId);
       if (currentStats) {
         return currentStats;
       }
@@ -240,8 +319,7 @@ export async function recalculateElo(
       winStreak: number,
       lossStreak: number,
       longestWinStreak: number,
-      isWinner: boolean,
-      currentPlayerStats: CurrentPlayerStats
+      isWinner: boolean
     ) => {
       let newWinStreak = winStreak;
       let newLossStreak = lossStreak;
@@ -263,7 +341,7 @@ export async function recalculateElo(
       );
       const newLongestStreak = Math.max(newWinStreak, longestWinStreak);
 
-      currentPlayerStats.set(playerId, {
+      processingPlayerStats.set(playerId, {
         mu: newMu,
         sigma: newSigma,
         elo: newElo,
@@ -287,80 +365,11 @@ export async function recalculateElo(
       };
     };
 
-    // Revert stats for removed players (using data from previous_game_players_data)
-    const currentGamePlayersForEditedGame = await supabase
-      .from("game_players")
-      .select("*")
-      .eq("game_id", editedGameId);
-    const currentPlayersInEditedGame =
-      currentGamePlayersForEditedGame.data?.map((gp) => gp.player_id) || [];
-    const originalPlayers =
-      gameEdit?.previous_game_players_data?.map((gp) => gp.player_id) || [];
-    const removedPlayers = originalPlayers.filter(
-      (playerId) => !currentPlayersInEditedGame.includes(playerId)
-    );
-
-    for (const removedPlayerId of removedPlayers) {
-      const beforeData = gameEdit?.previous_game_players_data?.find(
-        (gp) => gp.player_id === removedPlayerId
-      );
-      if (beforeData) {
-        const { error: updatePlayerError } = await supabase
-          .from("player_teams")
-          .update({
-            elo: beforeData.elo_before,
-            mu: beforeData.mu_before,
-            sigma: beforeData.sigma_before,
-            wins: beforeData.wins_before,
-            losses: beforeData.losses_before,
-            win_streak: beforeData.win_streak_before,
-            loss_streak: beforeData.loss_streak_before,
-            win_percent: beforeData.win_percent_before,
-            highest_elo: beforeData.highest_elo_before,
-            longest_win_streak: beforeData.longest_win_streak_before,
-            elo_change: beforeData.elo_change_before,
-          })
-          .eq("id", removedPlayerId);
-        if (updatePlayerError) {
-          console.error("Error reverting player stats:", updatePlayerError);
-        }
-      }
-    }
-
     // Recalculate ELO for the edited game and all subsequent games
-    const currentPlayerStats = new Map<
-      string,
-      {
-        mu: number;
-        sigma: number;
-        elo: number;
-        elo_change: number;
-        highest_elo: number;
-        wins: number;
-        losses: number;
-        win_percent: number;
-        win_streak: number;
-        loss_streak: number;
-        longest_win_streak: number;
-      }
-    >();
-    previousGamePlayersData.forEach((playerData) => {
-      currentPlayerStats.set(playerData.player_id, {
-        mu: playerData.mu_before,
-        sigma: playerData.sigma_before,
-        elo: playerData.elo_before,
-        highest_elo: playerData.highest_elo_before,
-        elo_change: playerData.elo_change_before,
-        win_percent: playerData.win_percent_before,
-        win_streak: playerData.win_streak_before,
-        loss_streak: playerData.loss_streak_before,
-        wins: playerData.wins_before,
-        losses: playerData.losses_before,
-        longest_win_streak: playerData.longest_win_streak_before,
-      });
-    });
+    const processingPlayerStats = new Map(playerStatsBeforeRecalculation);
 
     for (const game of gamesToRecalculate) {
+      if (gameEditId === null && game.id === editedGameId) continue;
       let gameWeight = 1; // Default weight if game_type is not specified or recognized
 
       if (game.game_weight === "competitive") {
@@ -397,10 +406,20 @@ export async function recalculateElo(
         wins_before: number;
         losses_before: number;
         win_streak_before: number;
-        loss_streak_before: number;
         win_percent_before: number;
+        loss_streak_before: number;
         longest_win_streak_before: number;
         elo_change_before: number;
+        mu_after: number;
+        sigma_after: number;
+        wins_after: number;
+        losses_after: number;
+        win_streak_after: number;
+        win_percent_after: number;
+        loss_streak_after: number;
+        longest_win_streak_after: number;
+        elo_change_after: number;
+        highest_elo_after: number;
       }[] = [];
 
       const { data: squadAGamePlayers, error: fetchSquadAError } =
@@ -421,7 +440,7 @@ export async function recalculateElo(
 
       const team1Players =
         squadAGamePlayers?.map((sp) => {
-          const playerHasCurrentStats = currentPlayerStats.get(sp.player_id);
+          const playerHasCurrentStats = processingPlayerStats.get(sp.player_id);
 
           if (playerHasCurrentStats) {
             return {
@@ -456,7 +475,7 @@ export async function recalculateElo(
         }) || [];
       const team2Players =
         squadBGamePlayers?.map((sp) => {
-          const playerHasCurrentStats = currentPlayerStats.get(sp.player_id);
+          const playerHasCurrentStats = processingPlayerStats.get(sp.player_id);
 
           if (playerHasCurrentStats) {
             return {
@@ -497,19 +516,10 @@ export async function recalculateElo(
         team1Players.map(
           async (p) =>
             new Rating(
+              (await getPlayerStatsBeforeGame(game.id, p.team_player_id))?.mu ??
+                p.mu,
               (
-                await getPlayerStatsBeforeGame(
-                  game.id,
-                  p.team_player_id,
-                  currentPlayerStats
-                )
-              )?.mu ?? p.mu,
-              (
-                await getPlayerStatsBeforeGame(
-                  game.id,
-                  p.team_player_id,
-                  currentPlayerStats
-                )
+                await getPlayerStatsBeforeGame(game.id, p.team_player_id)
               )?.sigma ?? p.sigma
             )
         )
@@ -518,19 +528,10 @@ export async function recalculateElo(
         team2Players.map(
           async (p) =>
             new Rating(
+              (await getPlayerStatsBeforeGame(game.id, p.team_player_id))?.mu ??
+                p.mu,
               (
-                await getPlayerStatsBeforeGame(
-                  game.id,
-                  p.team_player_id,
-                  currentPlayerStats
-                )
-              )?.mu ?? p.mu,
-              (
-                await getPlayerStatsBeforeGame(
-                  game.id,
-                  p.team_player_id,
-                  currentPlayerStats
-                )
+                await getPlayerStatsBeforeGame(game.id, p.team_player_id)
               )?.sigma ?? p.sigma
             )
         )
@@ -594,8 +595,7 @@ export async function recalculateElo(
             team1Players[index].win_streak,
             team1Players[index].loss_streak,
             team1Players[index].longest_win_streak,
-            isWinner,
-            currentPlayerStats
+            isWinner
           );
           playersUpdates.push({
             id: team1Players[index].team_player_id,
@@ -625,10 +625,20 @@ export async function recalculateElo(
             wins_before: team1Players[index].wins,
             losses_before: team1Players[index].losses,
             win_streak_before: team1Players[index].win_streak,
+            win_percent_before: team1Players[index].win_percent,
             loss_streak_before: team1Players[index].loss_streak,
             longest_win_streak_before: team1Players[index].longest_win_streak,
-            win_percent_before: team1Players[index].win_percent,
             elo_change_before: team1Players[index].elo_change,
+            mu_after: newMu,
+            sigma_after: newSigma,
+            wins_after: newPlayerStats.wins,
+            losses_after: newPlayerStats.losses,
+            win_streak_after: newPlayerStats.winStreak,
+            win_percent_after: newPlayerStats.winPercent,
+            loss_streak_after: newPlayerStats.lossStreak,
+            longest_win_streak_after: newPlayerStats.longestWinStreak,
+            elo_change_after: eloChange,
+            highest_elo_after: newHighElo,
           });
         });
         newRatings[1].forEach((rating, index) => {
@@ -664,8 +674,7 @@ export async function recalculateElo(
             team2Players[index].win_streak,
             team2Players[index].loss_streak,
             team2Players[index].longest_win_streak,
-            isWinner,
-            currentPlayerStats
+            isWinner
           );
           playersUpdates.push({
             id: team2Players[index].team_player_id,
@@ -695,10 +704,20 @@ export async function recalculateElo(
             wins_before: team2Players[index].wins,
             losses_before: team2Players[index].losses,
             win_streak_before: team2Players[index].win_streak,
+            win_percent_before: team2Players[index].win_percent,
             loss_streak_before: team2Players[index].loss_streak,
             longest_win_streak_before: team2Players[index].longest_win_streak,
-            win_percent_before: team2Players[index].win_percent,
             elo_change_before: team2Players[index].elo_change,
+            mu_after: newMu,
+            sigma_after: newSigma,
+            wins_after: newPlayerStats.wins,
+            losses_after: newPlayerStats.losses,
+            win_streak_after: newPlayerStats.winStreak,
+            win_percent_after: newPlayerStats.winPercent,
+            loss_streak_after: newPlayerStats.lossStreak,
+            longest_win_streak_after: newPlayerStats.longestWinStreak,
+            elo_change_after: eloChange,
+            highest_elo_after: newHighElo,
           });
         });
       }
@@ -715,6 +734,22 @@ export async function recalculateElo(
         if (gamePlayersBatchError)
           console.error("Batch Game Players Update Error");
       }
+      // Update processingPlayerStats for the next game
+      gamePlayersUpdates.forEach((gpu) => {
+        processingPlayerStats.set(gpu.player_id, {
+          mu: gpu.mu_after,
+          sigma: gpu.sigma_after,
+          elo: gpu.elo_after,
+          wins: gpu.wins_after,
+          losses: gpu.losses_after,
+          win_streak: gpu.win_streak_after,
+          loss_streak: gpu.loss_streak_after,
+          longest_win_streak: gpu.longest_win_streak_after,
+          highest_elo: gpu.highest_elo_after,
+          win_percent: gpu.win_percent_after,
+          elo_change: gpu.elo_change_after,
+        });
+      });
     }
   } catch (error) {
     console.error("Error recalculating ELO:", error);

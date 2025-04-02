@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { PlayerType } from "@/lib/types";
+import { NewPlayerType } from "@/lib/types";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowDropUpIcon from "@mui/icons-material/ArrowDropUp";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
@@ -33,9 +33,9 @@ const getRank = (elo: number) => {
 };
 
 const Leaderboard = ({ teamId }: LeaderboardProps) => {
-  const [players, setPlayers] = useState<PlayerType[]>([]);
+  const [players, setPlayers] = useState<NewPlayerType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<keyof PlayerType>("elo");
+  const [sortBy, setSortBy] = useState<keyof NewPlayerType>("elo");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [teamName, setTeamName] = useState<string | null>(null);
 
@@ -47,12 +47,12 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
         const { data, error } = await supabase
           .from("player_teams")
           .select(
-            `team_id, players!inner(*)
+            `*, players!inner(name)
         `
           )
           .eq("team_id", teamId)
-          .or(`losses.gt.0, wins.gt.0`, { referencedTable: "players" })
-          .order(`players(${sortBy})`, { ascending: sortDirection === "asc" });
+          .or(`losses.gt.0, wins.gt.0`)
+          .order(sortBy, { ascending: sortDirection === "asc" });
 
         // If teamId is provided, filter by team
         const { data: teamNm } = await supabase
@@ -65,14 +65,17 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
         if (error) {
           console.error("Error fetching players", error);
         } else {
-          const formattedPlayers = data.map((p) => p.players);
+          const formattedPlayers = data.map((p) => ({
+            name: p.players.name,
+            ...p,
+          }));
           setPlayers(formattedPlayers || []);
         }
       } else {
         const { data, error } = await supabase
-          .from("players")
+          .from("player_teams")
           .select(
-            `*
+            `*, players(name)
         `
           )
           .or("wins.gt.0, losses.gt.0")
@@ -81,7 +84,11 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
         if (error) {
           console.error("Error fetching players:", error);
         } else {
-          setPlayers(data || []);
+          const formattedData = data.map((p) => ({
+            name: p.players.name,
+            ...p,
+          }));
+          setPlayers(formattedData || []);
         }
       }
       setLoading(false);
@@ -90,7 +97,7 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
     fetchPlayers();
   }, [sortBy, sortDirection, teamId]);
 
-  const handleSort = (column: keyof PlayerType) => {
+  const handleSort = (column: keyof NewPlayerType) => {
     if (sortBy === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -232,7 +239,7 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
                 const rank = getRank(player.elo);
 
                 return (
-                  <TableRow key={player.id}>
+                  <TableRow key={player.player_id + player.team_id}>
                     {/* Rank Column */}
                     <TableCell
                       sx={{

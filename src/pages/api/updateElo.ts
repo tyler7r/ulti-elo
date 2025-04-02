@@ -1,3 +1,4 @@
+import { getTeamSizeCounteractionFactor } from "@/lib/getCounteractionFactor";
 import { supabase } from "@/lib/supabase";
 import { GameFormSquadType, PlayerRating } from "@/lib/types";
 import { updatePlayerStats } from "@/lib/updatePlayerStats";
@@ -41,10 +42,8 @@ export async function updateElo(
     // Fetch player ratings for Squad A
     const { data: playersA, error: errorA } = await supabase
       .from("player_teams")
-      .select(
-        "player_id, players(mu, sigma, elo, elo_change, highest_elo, wins, losses, win_percent, win_streak, loss_streak, longest_win_streak)"
-      )
-      .in("player_id", squadAPlayerIDs)
+      .select("*, players(name, id)")
+      .in("id", squadAPlayerIDs)
       .eq("team_id", teamId);
 
     if (errorA || !playersA) throw new Error("Failed to fetch Squad A ratings");
@@ -52,43 +51,44 @@ export async function updateElo(
     // Fetch player ratings for Squad B
     const { data: playersB, error: errorB } = await supabase
       .from("player_teams")
-      .select(
-        "player_id, players(mu, sigma, elo, elo_change, highest_elo, wins, losses, win_percent, win_streak, loss_streak, longest_win_streak)"
-      )
-      .in("player_id", squadBPlayerIDs)
+      .select("*, players(name, id)")
+      .in("id", squadBPlayerIDs)
       .eq("team_id", teamId);
 
     if (errorB || !playersB) throw new Error("Failed to fetch Squad B ratings");
 
     const parsedPlayersA: PlayerRating[] = playersA.map((p) => ({
-      player_id: p.player_id,
-      mu: Number(p.players.mu),
-      sigma: Number(p.players.sigma),
-      elo: Number(p.players.elo),
-      elo_change: Number(p.players.elo_change),
-      highest_elo: Number(p.players.highest_elo),
-      wins: Number(p.players.wins),
-      losses: Number(p.players.losses),
-      win_percent: Number(p.players.win_percent),
-      win_streak: Number(p.players.win_streak),
-      loss_streak: Number(p.players.loss_streak),
-      longest_win_streak: Number(p.players.longest_win_streak),
+      player_id: p.id,
+      mu: Number(p.mu),
+      sigma: Number(p.sigma),
+      elo: Number(p.elo),
+      elo_change: Number(p.elo_change),
+      highest_elo: Number(p.highest_elo),
+      wins: Number(p.wins),
+      losses: Number(p.losses),
+      win_percent: Number(p.win_percent),
+      win_streak: Number(p.win_streak),
+      loss_streak: Number(p.loss_streak),
+      longest_win_streak: Number(p.longest_win_streak),
     }));
 
     const parsedPlayersB: PlayerRating[] = playersB.map((p) => ({
-      player_id: p.player_id,
-      mu: Number(p.players.mu),
-      sigma: Number(p.players.sigma),
-      elo: Number(p.players.elo),
-      elo_change: Number(p.players.elo_change),
-      highest_elo: Number(p.players.highest_elo),
-      wins: Number(p.players.wins),
-      losses: Number(p.players.losses),
-      win_percent: Number(p.players.win_percent),
-      win_streak: Number(p.players.win_streak),
-      loss_streak: Number(p.players.loss_streak),
-      longest_win_streak: Number(p.players.longest_win_streak),
+      player_id: p.id,
+      mu: Number(p.mu),
+      sigma: Number(p.sigma),
+      elo: Number(p.elo),
+      elo_change: Number(p.elo_change),
+      highest_elo: Number(p.highest_elo),
+      wins: Number(p.wins),
+      losses: Number(p.losses),
+      win_percent: Number(p.win_percent),
+      win_streak: Number(p.win_streak),
+      loss_streak: Number(p.loss_streak),
+      longest_win_streak: Number(p.longest_win_streak),
     }));
+
+    const squadASize = parsedPlayersA.length;
+    const squadBSize = parsedPlayersB.length;
 
     const teamA: Rating[] = parsedPlayersA.map(
       (p) => new Rating(p.mu, p.sigma)
@@ -135,10 +135,17 @@ export async function updateElo(
 
         const isWinner = sqA.score > sqB.score;
 
+        const counteractionFactor = getTeamSizeCounteractionFactor(
+          squadASize,
+          squadBSize
+        );
+
         const eloChange = Math.round(
           (isWinner
             ? baseEloChange * scoreInfluence * underdogInfluence
-            : (baseEloChange * scoreInfluence) / underdogInfluence) * gameWeight
+            : (baseEloChange * scoreInfluence) / underdogInfluence) *
+            gameWeight *
+            counteractionFactor
         );
 
         // Modify 'mu' directly based on score influence and rating difference
@@ -150,7 +157,7 @@ export async function updateElo(
         return Promise.all([
           // Update player_teams table with new ratings
           supabase
-            .from("players")
+            .from("player_teams")
             .update({
               mu: newMu,
               sigma: newSigma,
@@ -194,10 +201,17 @@ export async function updateElo(
 
         const isWinner = sqB.score > sqB.score;
 
+        const counteractionFactor = getTeamSizeCounteractionFactor(
+          squadASize,
+          squadBSize
+        );
+
         const eloChange = Math.round(
           (isWinner
             ? baseEloChange * scoreInfluence * underdogInfluence
-            : (baseEloChange * scoreInfluence) / underdogInfluence) * gameWeight
+            : (baseEloChange * scoreInfluence) / underdogInfluence) *
+            gameWeight *
+            counteractionFactor
         );
 
         // Modify 'mu' directly based on score influence and rating difference
@@ -209,7 +223,7 @@ export async function updateElo(
         return Promise.all([
           // Update player_teams table with new ratings
           supabase
-            .from("players")
+            .from("player_teams")
             .update({
               mu: newMu,
               sigma: newSigma,

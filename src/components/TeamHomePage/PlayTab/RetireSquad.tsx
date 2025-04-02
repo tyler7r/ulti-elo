@@ -1,6 +1,8 @@
 import { supabase } from "@/lib/supabase";
+import { AlertType } from "@/lib/types";
 import CloseIcon from "@mui/icons-material/Close";
 import {
+  Alert,
   Backdrop,
   Box,
   Button,
@@ -27,8 +29,10 @@ const RetireSquad = ({
   updateSquads,
 }: RetireSquadProps) => {
   const [squadName, setSquadName] = useState("");
-  const [success, setSuccess] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [alert, setAlert] = useState<AlertType>({
+    message: null,
+    severity: "error",
+  });
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
@@ -55,19 +59,41 @@ const RetireSquad = ({
   const handleRetireSquad = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
+      // 1. Update the squad to inactive
+      const { error: squadError } = await supabase
         .from("squads")
         .update({ active: false })
         .eq("id", squadId);
 
-      if (error) throw error;
+      if (squadError) throw squadError;
 
-      setSuccess("Squad retired successfully!");
+      // 2. Update all associated squad_players to inactive
+      const { error: squadPlayersError } = await supabase
+        .from("squad_players")
+        .update({ active: false })
+        .eq("squad_id", squadId);
+
+      if (squadPlayersError) {
+        console.error(
+          "Error making squad players inactive:",
+          squadPlayersError
+        );
+        // Optionally, you might want to revert the squad status here or handle the error differently
+        setAlert({
+          message:
+            "Squad retired, but there was an error making squad players inactive.",
+          severity: "error",
+        });
+        setLoading(false);
+        updateSquads();
+        return;
+      }
+
+      setAlert({ message: "Squad retired successfully!", severity: "success" });
       setLoading(false);
       updateSquads();
     } catch (error) {
       console.error("Error retiring squad:", error);
-      setError("An error occurred while retiring the squad.");
       setLoading(false);
     }
   };
@@ -115,32 +141,17 @@ const RetireSquad = ({
               </IconButton>
             </Box>
 
-            {error && (
-              <Typography
-                variant="overline"
-                sx={{ fontWeight: "bold" }}
-                color="error"
-              >
-                {error}
-              </Typography>
-            )}
-            {success && (
-              <Typography
-                variant="overline"
-                sx={{ fontWeight: "bold" }}
-                color="success"
-              >
-                {success}
-              </Typography>
-            )}
-
             <form
               onSubmit={handleRetireSquad}
               className="space-y-4 flex flex-col gap-2"
             >
               <Typography>
-                Are you sure you want to retire {squadName}?
+                Are you sure you want to retire {squadName}? This will also make
+                all players in this squad inactive.
               </Typography>
+              {alert.message && (
+                <Alert severity={alert.severity}>{alert.message}</Alert>
+              )}
               <Button
                 variant="outlined"
                 color="error"

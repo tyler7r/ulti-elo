@@ -39,7 +39,7 @@ export const getGameHistory = async ({
         elo_before,
         elo_after,
         is_winner,
-        players (*)
+        player_teams (*, players(name))
       )
     `
     )
@@ -80,20 +80,21 @@ export const getGameHistory = async ({
       players: game.game_players
         .filter((gp) => gp.squad_id === game.squad_a_id)
         .map((gp) => ({
-          id: gp.players.id,
-          name: gp.players.name,
-          elo: gp.players.elo,
+          id: gp.player_teams.id,
+          player_id: gp.player_id,
+          name: gp.player_teams.players.name,
+          elo: gp.player_teams.elo,
           elo_after: gp.elo_after,
           elo_before: gp.elo_before,
-          win_streak: gp.players.win_streak,
-          loss_streak: gp.players.loss_streak,
-          wins: gp.players.wins,
-          losses: gp.players.losses,
-          mu: gp.players.mu,
-          sigma: gp.players.sigma,
-          win_percent: gp.players.win_percent,
-          highest_elo: gp.players.highest_elo,
-          longest_win_streak: gp.players.longest_win_streak,
+          win_streak: gp.player_teams.win_streak,
+          loss_streak: gp.player_teams.loss_streak,
+          wins: gp.player_teams.wins,
+          losses: gp.player_teams.losses,
+          mu: gp.player_teams.mu,
+          sigma: gp.player_teams.sigma,
+          win_percent: gp.player_teams.win_percent,
+          highest_elo: gp.player_teams.highest_elo,
+          longest_win_streak: gp.player_teams.longest_win_streak,
         })),
     },
     squadB: {
@@ -106,20 +107,21 @@ export const getGameHistory = async ({
       players: game.game_players
         .filter((gp) => gp.squad_id === game.squad_b_id)
         .map((gp) => ({
-          id: gp.players.id,
-          name: gp.players.name,
-          elo: gp.players.elo,
+          id: gp.player_teams.id,
+          player_id: gp.player_id,
+          name: gp.player_teams.players.name,
+          elo: gp.player_teams.elo,
           elo_after: gp.elo_after,
           elo_before: gp.elo_before,
-          win_streak: gp.players.win_streak,
-          loss_streak: gp.players.loss_streak,
-          wins: gp.players.wins,
-          losses: gp.players.losses,
-          mu: gp.players.mu,
-          sigma: gp.players.sigma,
-          win_percent: gp.players.win_percent,
-          highest_elo: gp.players.highest_elo,
-          longest_win_streak: gp.players.longest_win_streak,
+          win_streak: gp.player_teams.win_streak,
+          loss_streak: gp.player_teams.loss_streak,
+          wins: gp.player_teams.wins,
+          losses: gp.player_teams.losses,
+          mu: gp.player_teams.mu,
+          sigma: gp.player_teams.sigma,
+          win_percent: gp.player_teams.win_percent,
+          highest_elo: gp.player_teams.highest_elo,
+          longest_win_streak: gp.player_teams.longest_win_streak,
         })),
     },
   }));

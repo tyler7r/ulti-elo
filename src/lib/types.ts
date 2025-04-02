@@ -29,10 +29,37 @@ export type GamePlayerType = {
   highest_elo_before: number;
   win_percent_before: number;
   elo_change_before: number;
+  mu_after: number;
+  sigma_after: number;
+  wins_after: number;
+  losses_after: number;
+  win_streak_after: number;
+  loss_streak_after: number;
+  longest_win_streak_after: number;
+  highest_elo_after: number;
+  win_percent_after: number;
+  elo_change_after: number;
 };
 
 export type PlayerType = {
   id: string;
+  name: string;
+  win_streak: number;
+  loss_streak: number;
+  wins: number;
+  losses: number;
+  elo: number;
+  elo_change: number;
+  mu: number;
+  sigma: number;
+  win_percent: number;
+  highest_elo: number;
+  longest_win_streak: number;
+};
+
+export type NewPlayerType = {
+  player_id: string;
+  team_id: string;
   name: string;
   win_streak: number;
   loss_streak: number;
@@ -72,12 +99,23 @@ export type PlayerStatsType = {
 };
 
 export type PlayerTeamType = {
+  id: string;
   player_id: string;
   team_id: string;
   elo: number;
   elo_change: number;
   mu: number;
   sigma: number;
+  wins: number;
+  losses: number;
+  win_percent: number;
+  win_streak: number;
+  loss_streak: number;
+  longest_win_streak: number;
+  highest_elo: number;
+  player: {
+    name: string;
+  };
 };
 
 export type TeamType = {
@@ -87,7 +125,7 @@ export type TeamType = {
 };
 
 export type PlayerSelectType = {
-  player_id: string;
+  id: string;
   players: PlayerType;
 };
 
@@ -125,6 +163,7 @@ export type SquadType = {
 
 export type PlayerHistoryType = {
   id: string;
+  player_id: string;
   name: string;
   elo: number;
   elo_before: number;
