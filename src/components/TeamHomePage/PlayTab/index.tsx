@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { PlayerType, TeamType } from "@/lib/types";
+import { PlayerTeamType, TeamType } from "@/lib/types";
 import { Box, Button, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import CreateSquad from "./CreateSquad";
@@ -14,7 +14,7 @@ type PlayTabType = {
 interface SquadType {
   id: string;
   name: string;
-  players: PlayerType[]; // Array of players in the squad
+  players: PlayerTeamType[]; // Array of players in the squad
 }
 
 const PlayTab = ({ team }: PlayTabType) => {
@@ -29,49 +29,70 @@ const PlayTab = ({ team }: PlayTabType) => {
 
   const fetchActiveSquads = async (teamId: string) => {
     // Fetch active squads and associated players from the squads_players table
-    const { data, error } = await supabase
-      .from("squad_players") // Join through the squads_players table
-      .select(
-        `
-        squads: squads!inner(
-          id,
-          name,
-          active,
-          team_id
-        ),
-        players: players!inner(
-          *
-        )
-      `
-      )
-      .eq("squads.team_id", teamId) // Ensure we're filtering by the correct team
-      .eq("squads.active", true) // Only active squads
-      .eq("active", true);
+    // const { data, error } = await supabase
+    //   .from("squad_players") // Join through the squads_players table
+    //   .select(
+    //     `
+    //     squads: squads!inner(
+    //       id,
+    //       name,
+    //       active,
+    //       team_id
+    //     ),
+    //     player_teams(*, player: players!inner(
+    //       name
+    //   ))
+    //   `
+    //   )
+    //   .eq("squads.team_id", teamId) // Ensure we're filtering by the correct team
+    //   .eq("squads.active", true)
+    //   .eq("active", true);
 
-    if (error) {
-      throw error;
-    }
+    // if (error) {
+    //   throw error;
+    // }
+
+    const { data: newSquads, error: newSquadsError } = await supabase
+      .from("squads")
+      .select(
+        "id, name, squad_players(player_id, active, player_teams(*, player: players(name)))"
+      )
+      .eq("team_id", teamId)
+      .eq("active", true)
+      .eq("squad_players.active", true);
+    if (newSquadsError) throw newSquadsError;
+
+    const formattedSquads = newSquads.map((squad) => ({
+      id: squad.id,
+      name: squad.name,
+      score: 0,
+      players: squad.squad_players.map((sp) => ({
+        ...sp.player_teams,
+      })),
+    }));
+
+    setActiveSquads(formattedSquads);
 
     // Organize the data to structure squads with their associated players
-    const squads = data.reduce<SquadType[]>((acc, row) => {
-      const { id, name } = row.squads;
-      const player = row.players;
+    // const squads = newSquads.reduce<SquadType[]>((acc, row) => {
+    //   const { id, name } = row;
+    //   const player = row.squad_players;
 
-      // Add the player to the correct squad
-      const squadIndex = acc.findIndex((squad) => squad.id === id);
-      if (squadIndex > -1) {
-        acc[squadIndex].players.push(player);
-      } else {
-        acc.push({
-          id,
-          name,
-          players: [player],
-        });
-      }
-      return acc;
-    }, []);
+    //   // Add the player to the correct squad
+    //   const squadIndex = acc.findIndex((squad) => squad.id === id);
+    //   if (squadIndex > -1) {
+    //     acc[squadIndex].players.push(player);
+    //   } else {
+    //     acc.push({
+    //       id,
+    //       name,
+    //       players: [player],
+    //     });
+    //   }
+    //   return acc;
+    // }, []);
 
-    setActiveSquads(squads);
+    // setActiveSquads(squads);
     setLoading(false);
   };
 
@@ -188,7 +209,7 @@ const PlayTab = ({ team }: PlayTabType) => {
                 {squad.players.length > 0 &&
                   squad.players.map((p) => (
                     <div key={p.id}>
-                      {p.name} (ELO: {p.elo})
+                      {p.player.name} (ELO: {p.elo})
                     </div>
                   ))}
                 <div className="flex gap-2 mt-2">

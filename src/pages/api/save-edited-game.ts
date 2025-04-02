@@ -1,7 +1,7 @@
 // /pages/api/save-edited-game.ts
 import { supabase } from "@/lib/supabase";
 import { NextApiRequest, NextApiResponse } from "next";
-import { recalculateElo } from "./recalculateElo";
+import { recalculateElo2 } from "./recalculateElo2";
 
 export default async function handler(
   req: NextApiRequest,
@@ -100,12 +100,14 @@ export default async function handler(
       }
 
       // Insert new game players for squad A
-      const gamePlayersA = squadAPlayers.map((playerId: string) => ({
-        game_id: gameId,
-        player_id: playerId,
-        squad_id: squadAId,
-        is_winner: squadAScore > squadBScore,
-      }));
+      const gamePlayersA = squadAPlayers.map(
+        (player: { id: string; player_id: string }) => ({
+          game_id: gameId,
+          player_id: player.id,
+          squad_id: squadAId,
+          is_winner: squadAScore > squadBScore,
+        })
+      );
       const { error: insertGamePlayersAError } = await supabase
         .from("game_players")
         .insert(gamePlayersA);
@@ -121,12 +123,14 @@ export default async function handler(
       }
 
       // Insert new game players for squad B
-      const gamePlayersB = squadBPlayers.map((playerId: string) => ({
-        game_id: gameId,
-        player_id: playerId,
-        squad_id: squadBId,
-        is_winner: squadBScore > squadAScore,
-      }));
+      const gamePlayersB = squadBPlayers.map(
+        (player: { id: string; player_id: string }) => ({
+          game_id: gameId,
+          player_id: player.id,
+          squad_id: squadBId,
+          is_winner: squadBScore > squadAScore,
+        })
+      );
       const { error: insertGamePlayersBError } = await supabase
         .from("game_players")
         .insert(gamePlayersB);
@@ -142,7 +146,7 @@ export default async function handler(
       }
 
       // 5. Trigger ELO recalculation for this game and all subsequent games
-      await recalculateElo(gameId, gameEditData.id, teamId);
+      await recalculateElo2(gameId, gameEditData.id, teamId);
 
       res
         .status(200)

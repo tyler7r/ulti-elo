@@ -29,7 +29,7 @@ import { useCallback, useEffect, useState } from "react";
 
 const TeamHomePage = () => {
   const { user, userRoles } = useAuth();
-  const [activeTab, setActiveTab] = useState(0); // For Tabs
+  const [activeTab, setActiveTab] = useState(0); // Default to Leaderboard
   const [team, setTeam] = useState<TeamType | null>(null);
   const [openRequestAdminDialog, setOpenRequestAdminDialog] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<number>(0);
@@ -42,6 +42,7 @@ const TeamHomePage = () => {
 
   const router = useRouter();
   const teamId = router.query.teamId as string;
+  const queryTab = router.query.tab as string | undefined;
   const userRole = userRoles.find((role) => role.team_id === teamId);
 
   const theme = useTheme();
@@ -84,12 +85,52 @@ const TeamHomePage = () => {
     }
   }, [teamId, userRole, fetchPendingRequests]);
 
+  useEffect(() => {
+    if (router.isReady && queryTab) {
+      let tabIndex = 0;
+      if (queryTab === "leaderboard") {
+        tabIndex = 0;
+      } else if (queryTab === "play") {
+        if (userRole) {
+          tabIndex = 1;
+        } else {
+          // Redirect to leaderboard or stay on the current tab (default is leaderboard)
+          // You can choose to not update activeTab here, keeping it at the default (0)
+          // Or you can explicitly navigate to the leaderboard
+          router.push(`/team/${teamId}`); // Redirect to /team/[teamId] which defaults to leaderboard
+          return; // Important to prevent further tab setting
+        }
+      } else if (queryTab === "history") {
+        tabIndex = 2;
+      }
+      setActiveTab(tabIndex);
+    }
+  }, [router, queryTab, teamId, userRole]);
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     event.preventDefault();
-    if (newValue === 1 && !userRole) {
-      setOpenRequestAdminDialog(true);
+    let newTabParam: string | undefined;
+    if (newValue === 0) {
+      newTabParam = "leaderboard";
+    } else if (newValue === 1) {
+      if (!userRole) {
+        setOpenRequestAdminDialog(true);
+        return; // Prevent tab change
+      }
+      newTabParam = "play";
+    } else if (newValue === 2) {
+      newTabParam = "history";
+    }
+
+    setActiveTab(newValue);
+
+    if (newTabParam) {
+      router.push({
+        pathname: `/team/${teamId}`,
+        query: { tab: newTabParam },
+      });
     } else {
-      setActiveTab(newValue);
+      router.push(`/team/${teamId}`); // Remove tab param if switching to default
     }
   };
 

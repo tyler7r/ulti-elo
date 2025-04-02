@@ -1,4 +1,3 @@
-// components/EditGameForm.tsx
 import { useAuth } from "@/contexts/AuthContext";
 import { getEditOverlappingPlayers } from "@/lib/getOverlappingPlayers";
 import { supabase } from "@/lib/supabase";
@@ -9,6 +8,7 @@ import {
   Player,
 } from "@/lib/types";
 import CheckIcon from "@mui/icons-material/Check";
+import DeleteIcon from "@mui/icons-material/Delete";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import UndoIcon from "@mui/icons-material/Undo";
 import {
@@ -53,6 +53,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
     []
   );
   const [loading, setLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [disabled, setDisabled] = useState<boolean>(false);
   const [alert, setAlert] = useState<AlertType>({
     message: null,
@@ -86,7 +87,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
           // Fetch all players for the team
           const { data: playerTeams, error: playersError } = await supabase
             .from("player_teams")
-            .select("player_id, players(id, name)")
+            .select("id, elo, players(id, name)")
             .eq("team_id", gameTeam.team_id);
 
           if (playersError || !playerTeams) {
@@ -98,7 +99,14 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
             setLoading(false);
             return;
           }
-          setAllTeamPlayers(playerTeams.map((pt) => pt.players));
+          setAllTeamPlayers(
+            playerTeams.map((pt) => ({
+              player_id: pt.players.id,
+              id: pt.id,
+              name: pt.players.name,
+              elo: pt.elo,
+            }))
+          );
 
           // Fetch game details
           const response = await fetch(`/api/edit-game/${gameId}`);
@@ -183,8 +191,14 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
           squadBId: gameDetails.squadB.id,
           squadAScore: Number(squadAScore),
           squadBScore: Number(squadBScore),
-          squadAPlayers: squadAPlayers.map((p) => p.id),
-          squadBPlayers: squadBPlayers.map((p) => p.id),
+          squadAPlayers: squadAPlayers.map((p) => ({
+            id: p.id,
+            player_id: p.player_id,
+          })),
+          squadBPlayers: squadBPlayers.map((p) => ({
+            id: p.id,
+            player_id: p.player_id,
+          })),
           teamId: gameDetails.game.team_id,
           userId: user.id,
           weight: gameWeight,
@@ -213,6 +227,48 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
       setAlert({ message: "Failed to save changes.", severity: "error" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteGame = async () => {
+    if (!gameId || !gameDetails?.game?.team_id) {
+      setAlert({
+        message: "Game ID or Team ID is missing.",
+        severity: "error",
+      });
+      return;
+    }
+
+    setDeleteLoading(true);
+    setAlert({ message: null, severity: "error" });
+
+    try {
+      const response = await fetch(`/api/delete-game/${gameId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setAlert({
+          message: "Game deleted successfully. ELO recalculations triggered.",
+          severity: "success",
+        });
+        if (gmId) {
+          void router.push(`/team/${gameDetails.game.team_id}?tab=history`);
+        } else {
+          void router.reload();
+        }
+      } else {
+        const errorData = await response.json();
+        setAlert({
+          message: errorData.error || "Failed to delete the game.",
+          severity: "error",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting game:", error);
+      setAlert({ message: "Failed to delete the game.", severity: "error" });
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -327,6 +383,16 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
             endIcon={<UndoIcon />}
           >
             Undo
+          </Button>
+          <Button
+            onClick={handleDeleteGame}
+            disabled={deleteLoading}
+            variant="contained"
+            color="error"
+            endIcon={<DeleteIcon />}
+            size="small"
+          >
+            {deleteLoading ? "Deleting..." : "Delete Game"}
           </Button>
         </div>
       </div>
@@ -455,6 +521,16 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
           endIcon={<UndoIcon />}
         >
           Undo
+        </Button>
+        <Button
+          onClick={handleDeleteGame}
+          disabled={deleteLoading}
+          variant="contained"
+          color="error"
+          endIcon={<DeleteIcon />}
+          size="small"
+        >
+          {deleteLoading ? "Deleting..." : "Delete Game"}
         </Button>
       </div>
     </div>

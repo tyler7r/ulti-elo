@@ -66,7 +66,7 @@ const GameForm = ({
       const { data, error } = await supabase
         .from("squads")
         .select(
-          "id, name, squad_players(player_id, active, players(name, elo))"
+          "id, name, squad_players(player_id, active, player_teams(elo, players(name)))"
         )
         .eq("team_id", teamId)
         .eq("active", true)
@@ -82,8 +82,8 @@ const GameForm = ({
         score: 0,
         players: squad.squad_players.map((sp) => ({
           id: sp.player_id,
-          name: sp.players.name,
-          elo: sp.players.elo,
+          name: sp.player_teams.players.name,
+          elo: sp.player_teams.elo,
         })),
       }));
       setSquads(formattedSquads);

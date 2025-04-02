@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabase";
-import { PlayerSelectType } from "@/lib/types";
+import { AlertType, PlayerTeamType } from "@/lib/types";
 import CloseIcon from "@mui/icons-material/Close";
 import {
+  Alert,
   Autocomplete,
   Backdrop,
   Box,
@@ -26,7 +27,7 @@ type EditSquadProps = {
 const fetchAvailablePlayers = async (teamId: string) => {
   const query = supabase
     .from("player_teams")
-    .select("player_id, players(*)")
+    .select("*, player:players(name)")
     .eq("team_id", teamId);
 
   const { data: availablePlayers, error: availableError } = await query;
@@ -45,17 +46,17 @@ const EditSquad = ({
   openEditSquadModal,
   updateSquads,
 }: EditSquadProps) => {
-  const [players, setPlayers] = useState<PlayerSelectType[]>([]);
-  const [selectedPlayers, setSelectedPlayers] = useState<PlayerSelectType[]>(
-    []
-  );
-  const [initialPlayers, setInitialPlayers] = useState<PlayerSelectType[]>([]);
+  const [players, setPlayers] = useState<PlayerTeamType[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<PlayerTeamType[]>([]);
+  const [initialPlayers, setInitialPlayers] = useState<PlayerTeamType[]>([]);
   const [squadName, setSquadName] = useState("");
   const [initialSquadName, setInitialSquadName] = useState("");
-  const [success, setSuccess] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [disabled, setDisabled] = useState<boolean>(false);
+  const [alert, setAlert] = useState<AlertType>({
+    message: null,
+    severity: "error",
+  });
 
   useEffect(() => {
     const getPlayers = async () => {
@@ -79,7 +80,7 @@ const EditSquad = ({
       // Fetch players associated with the squad
       const { data: squadPlayers, error: squadPlayersError } = await supabase
         .from("squad_players")
-        .select("player_id, players!inner(*)")
+        .select("player_id, player_teams!inner(*, player:players(name))")
         .eq("squad_id", squadId)
         .eq("active", true);
       if (squadPlayersError) {
@@ -87,9 +88,13 @@ const EditSquad = ({
         return;
       }
 
+      const formattedPlayers = squadPlayers.map((p) => ({
+        ...p.player_teams,
+      }));
+
       // Set the selected players
-      setInitialPlayers(squadPlayers);
-      setSelectedPlayers(squadPlayers);
+      setInitialPlayers(formattedPlayers);
+      setSelectedPlayers(formattedPlayers);
     };
 
     if (teamId && squadId) {
@@ -114,15 +119,23 @@ const EditSquad = ({
     }
   }, [loading, initialPlayers, initialSquadName, squadName, selectedPlayers]);
 
-  const handlePlayerSelect = (newPlayers: PlayerSelectType[]) => {
+  const handlePlayerSelect = (newPlayers: PlayerTeamType[]) => {
     setSelectedPlayers(newPlayers);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setSuccess("");
+    setAlert({ message: null, severity: "error" });
+
+    if (selectedPlayers.length === 0) {
+      setAlert({
+        message: "There must be at least 1 player on your squad!",
+        severity: "error",
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
       // Update squad details (name)
@@ -134,20 +147,20 @@ const EditSquad = ({
       if (updateError) throw updateError;
 
       // Identify players to add, keep, and remove
-      const currentPlayerIds = initialPlayers.map((p) => p.player_id);
-      const newPlayerIds = selectedPlayers.map((p) => p.player_id);
+      const currentPlayerIds = initialPlayers.map((p) => p.id);
+      const newPlayerIds = selectedPlayers.map((p) => p.id);
 
       const playersToAdd = selectedPlayers.filter(
-        (p) => !currentPlayerIds.includes(p.player_id)
+        (p) => !currentPlayerIds.includes(p.id)
       );
       const playersToRemove = initialPlayers.filter(
-        (p) => !newPlayerIds.includes(p.player_id)
+        (p) => !newPlayerIds.includes(p.id)
       );
 
       // 🟢 Add new players with first and last game numbers
       if (playersToAdd.length > 0) {
         const newSquadPlayers = playersToAdd.map((player) => ({
-          player_id: player.player_id,
+          player_id: player.id,
           squad_id: squadId,
           active: true,
         }));
@@ -166,18 +179,24 @@ const EditSquad = ({
             .from("squad_players")
             .update({ active: false })
             .eq("squad_id", squadId)
-            .eq("player_id", player.player_id);
+            .eq("player_id", player.id);
 
           if (removeError) throw removeError;
         }
       }
 
-      setSuccess(`${squadName} successfully updated!`);
+      setAlert({
+        message: `${squadName} successfully updated!`,
+        severity: "success",
+      });
       setLoading(false);
       updateSquads();
     } catch (error) {
       console.error("Error updating squad:", error);
-      setError("An error occurred while updating the squad.");
+      setAlert({
+        message: "An error occurred while updating the squad.",
+        severity: "error",
+      });
       setLoading(false);
     }
   };
@@ -192,12 +211,15 @@ const EditSquad = ({
 
       if (error) throw error;
 
-      setSuccess("Squad retired successfully!");
+      setAlert({ message: "Squad retired successfully!", severity: "success" });
       setLoading(false);
       updateSquads();
     } catch (error) {
       console.error("Error retiring squad:", error);
-      setError("An error occurred while retiring the squad.");
+      setAlert({
+        message: "An error occurred while retiring the squad.",
+        severity: "error",
+      });
       setLoading(false);
     }
   };
@@ -247,25 +269,6 @@ const EditSquad = ({
               </IconButton>
             </Box>
 
-            {error && (
-              <Typography
-                variant="overline"
-                sx={{ fontWeight: "bold" }}
-                color="error"
-              >
-                {error}
-              </Typography>
-            )}
-            {success && (
-              <Typography
-                variant="overline"
-                sx={{ fontWeight: "bold" }}
-                color="success"
-              >
-                {success}
-              </Typography>
-            )}
-
             <form
               onSubmit={handleSubmit}
               className="space-y-4 flex flex-col gap-2"
@@ -287,20 +290,17 @@ const EditSquad = ({
                 <Autocomplete
                   multiple
                   options={players.filter(
-                    (player) =>
-                      !selectedPlayers.some(
-                        (p) => p.player_id === player.player_id
-                      )
+                    (player) => !selectedPlayers.some((p) => p.id === player.id)
                   )}
-                  getOptionLabel={(option) => `${option.players.name}`} // Display only name
+                  getOptionLabel={(option) => `${option.player.name}`} // Display only name
                   value={selectedPlayers}
                   onChange={(_, newValue) => handlePlayerSelect(newValue)}
                   isOptionEqualToValue={(option, value) =>
-                    option.player_id === value.player_id
+                    option.id === value.id
                   }
                   renderOption={(props, option) => (
-                    <li {...props} key={option.player_id}>
-                      {option.players.name} (ELO: {option.players.elo})
+                    <li {...props} key={option.id}>
+                      {option.player.name} (ELO: {option.elo})
                     </li>
                   )}
                   renderInput={(params) => (
@@ -314,6 +314,9 @@ const EditSquad = ({
                   )}
                 />
               </FormControl>
+              {alert.message && (
+                <Alert severity={alert.severity}>{alert.message}</Alert>
+              )}
               <Button
                 type="submit"
                 variant="contained"

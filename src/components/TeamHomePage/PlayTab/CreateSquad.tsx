@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { PlayerSelectType } from "@/lib/types";
+import { PlayerTeamType } from "@/lib/types";
 import CloseIcon from "@mui/icons-material/Close";
 import {
   Alert,
@@ -26,7 +26,7 @@ type CreateSquadProps = {
 const fetchAvailablePlayers = async (teamId: string) => {
   const query = supabase
     .from("player_teams")
-    .select("player_id, players(*)")
+    .select("*, player:players(name)")
     .eq("team_id", teamId);
   const { data: availablePlayers, error: availableError } = await query;
 
@@ -43,10 +43,8 @@ const CreateSquad = ({
   openSquadModal,
   updateSquads,
 }: CreateSquadProps) => {
-  const [players, setPlayers] = useState<PlayerSelectType[]>([]);
-  const [selectedPlayers, setSelectedPlayers] = useState<PlayerSelectType[]>(
-    []
-  );
+  const [players, setPlayers] = useState<PlayerTeamType[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<PlayerTeamType[]>([]);
   const [squadName, setSquadName] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +58,7 @@ const CreateSquad = ({
     if (teamId) getPlayers();
   }, [teamId]);
 
-  const handlePlayerSelect = (newPlayers: PlayerSelectType[]) => {
+  const handlePlayerSelect = (newPlayers: PlayerTeamType[]) => {
     setSelectedPlayers(newPlayers);
   };
 
@@ -87,7 +85,7 @@ const CreateSquad = ({
       const squadId = squad.id;
       const squadPlayers = [
         ...selectedPlayers.map((player) => ({
-          player_id: player.player_id,
+          player_id: player.id,
           squad_id: squadId,
         })),
       ];
@@ -174,20 +172,17 @@ const CreateSquad = ({
                 <Autocomplete
                   multiple
                   options={players.filter(
-                    (player) =>
-                      !selectedPlayers.some(
-                        (p) => p.player_id === player.player_id
-                      )
+                    (player) => !selectedPlayers.some((p) => p.id === player.id)
                   )}
-                  getOptionLabel={(option) => `${option.players.name}`} // Display only name
+                  getOptionLabel={(option) => `${option.player.name}`} // Display only name
                   value={selectedPlayers}
                   onChange={(_, newValue) => handlePlayerSelect(newValue)}
                   isOptionEqualToValue={(option, value) =>
-                    option.player_id === value.player_id
+                    option.id === value.id
                   }
                   renderOption={(props, option) => (
-                    <li {...props} key={option.player_id}>
-                      {option.players.name} (ELO: {option.players.elo})
+                    <li {...props} key={option.id}>
+                      {option.player.name} (ELO: {option.elo})
                     </li>
                   )}
                   renderInput={(params) => (
