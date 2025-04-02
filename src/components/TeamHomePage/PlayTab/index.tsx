@@ -1,6 +1,14 @@
 import { supabase } from "@/lib/supabase";
 import { PlayerTeamType, TeamType } from "@/lib/types";
-import { Box, Button, Typography } from "@mui/material";
+import { Delete as DeleteIcon, Edit as EditIcon } from "@mui/icons-material";
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Typography,
+  useTheme,
+} from "@mui/material";
 import { useEffect, useState } from "react";
 import CreateSquad from "./CreateSquad";
 import EditSquad from "./EditSquad";
@@ -27,31 +35,9 @@ const PlayTab = ({ team }: PlayTabType) => {
   const [openRetireSquadModal, setRetireSquadModal] = useState(false);
   const [openNewGameModal, setOpenNewGameModal] = useState(false);
 
+  const theme = useTheme();
+
   const fetchActiveSquads = async (teamId: string) => {
-    // Fetch active squads and associated players from the squads_players table
-    // const { data, error } = await supabase
-    //   .from("squad_players") // Join through the squads_players table
-    //   .select(
-    //     `
-    //     squads: squads!inner(
-    //       id,
-    //       name,
-    //       active,
-    //       team_id
-    //     ),
-    //     player_teams(*, player: players!inner(
-    //       name
-    //   ))
-    //   `
-    //   )
-    //   .eq("squads.team_id", teamId) // Ensure we're filtering by the correct team
-    //   .eq("squads.active", true)
-    //   .eq("active", true);
-
-    // if (error) {
-    //   throw error;
-    // }
-
     const { data: newSquads, error: newSquadsError } = await supabase
       .from("squads")
       .select(
@@ -72,27 +58,6 @@ const PlayTab = ({ team }: PlayTabType) => {
     }));
 
     setActiveSquads(formattedSquads);
-
-    // Organize the data to structure squads with their associated players
-    // const squads = newSquads.reduce<SquadType[]>((acc, row) => {
-    //   const { id, name } = row;
-    //   const player = row.squad_players;
-
-    //   // Add the player to the correct squad
-    //   const squadIndex = acc.findIndex((squad) => squad.id === id);
-    //   if (squadIndex > -1) {
-    //     acc[squadIndex].players.push(player);
-    //   } else {
-    //     acc.push({
-    //       id,
-    //       name,
-    //       players: [player],
-    //     });
-    //   }
-    //   return acc;
-    // }, []);
-
-    // setActiveSquads(squads);
     setLoading(false);
   };
 
@@ -192,44 +157,87 @@ const PlayTab = ({ team }: PlayTabType) => {
             alignItems="center"
             flexWrap="wrap"
             justifyContent="center"
-            gap={4}
+            gap={1}
           >
             {activeSquads.map((squad) => (
-              <Box
+              <Card
                 key={squad.id}
-                sx={{ marginBottom: 2 }}
-                display="flex"
-                flexDirection="column"
-                alignItems="center"
-                justifyContent="center"
+                sx={{
+                  width: "300px", // Adjust width as needed
+                  marginBottom: 2,
+                  borderBottom: `1px solid ${theme.palette.divider}`, // Divider border
+                  borderRadius: "4px",
+                  overflow: "hidden",
+                  backgroundColor: "transparent", // Transparent background
+                  display: "flex", // Make card a flex container
+                  flexDirection: "column", // Stack content vertically
+                }}
               >
-                <Typography variant="h6" fontWeight="bold">
-                  {squad.name}
-                </Typography>
-                {squad.players.length > 0 &&
-                  squad.players.map((p) => (
-                    <div key={p.id}>
-                      {p.player.name} (ELO: {p.elo})
-                    </div>
-                  ))}
-                <div className="flex gap-2 mt-2">
-                  <Button
-                    variant="outlined"
-                    onClick={(e) => handleEditSquad(e, squad.id)}
-                    size="small"
+                <CardContent
+                  sx={{
+                    padding: "12px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between", // Space out top and bottom content
+                    height: "100%", // Ensure full height for proper button placement
+                  }}
+                >
+                  <Box>
+                    <Typography
+                      variant="h6"
+                      fontWeight="bold"
+                      gutterBottom
+                      sx={{ fontSize: "1.2rem" }}
+                    >
+                      {squad.name}
+                    </Typography>
+                    {squad.players.length > 0 ? (
+                      squad.players.map((p) => (
+                        <Typography
+                          key={p.id}
+                          variant="body2"
+                          sx={{ fontSize: "0.9rem", wordBreak: "break-word" }}
+                        >
+                          {p.player.name} (ELO: {p.elo})
+                        </Typography>
+                      ))
+                    ) : (
+                      <Typography variant="body2" color="textSecondary">
+                        No players in this squad.
+                      </Typography>
+                    )}
+                  </Box>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "row",
+                      gap: 2,
+                      alignSelf: "flex-end",
+                    }}
                   >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={(e) => handleRetireSquad(e, squad.id)}
-                    size="small"
-                  >
-                    Retire
-                  </Button>
-                </div>
-              </Box>
+                    <Button
+                      variant="text"
+                      color="primary"
+                      onClick={(e) => handleEditSquad(e, squad.id)}
+                      size="small"
+                      startIcon={<EditIcon />}
+                      sx={{ fontWeight: "bold" }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="text"
+                      color="error"
+                      onClick={(e) => handleRetireSquad(e, squad.id)}
+                      size="small"
+                      startIcon={<DeleteIcon />}
+                      sx={{ fontWeight: "bold" }}
+                    >
+                      Retire
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
             ))}
           </Box>
         )}

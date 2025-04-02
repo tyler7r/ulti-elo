@@ -1,4 +1,3 @@
-import { getTeamSizeCounteractionFactor } from "@/lib/getCounteractionFactor";
 import { supabase } from "@/lib/supabase";
 import { GameFormSquadType, PlayerRating } from "@/lib/types";
 import { updatePlayerStats } from "@/lib/updatePlayerStats";
@@ -87,19 +86,42 @@ export async function updateElo(
       longest_win_streak: Number(p.longest_win_streak),
     }));
 
-    const squadASize = parsedPlayersA.length;
-    const squadBSize = parsedPlayersB.length;
+    const teamASize = sqA.players.length;
+    const teamBSize = sqB.players.length;
 
-    const teamA: Rating[] = parsedPlayersA.map(
+    const augmentedTeamA: Rating[] = parsedPlayersA.map(
       (p) => new Rating(p.mu, p.sigma)
     );
-    const teamB: Rating[] = parsedPlayersB.map(
+    const augmentedTeamB: Rating[] = parsedPlayersB.map(
       (p) => new Rating(p.mu, p.sigma)
     );
+
+    if (teamASize < teamBSize) {
+      const avgMuA =
+        parsedPlayersA.reduce((sum, p) => sum + p.mu, 0) / teamASize || 15;
+      const avgSigmaA =
+        parsedPlayersA.reduce((sum, p) => sum + p.sigma, 0) / teamASize || 4;
+      const diff = teamBSize - teamASize;
+      for (let i = 0; i < diff; i++) {
+        augmentedTeamA.push(new Rating(avgMuA, avgSigmaA));
+      }
+    } else if (teamBSize < teamASize) {
+      const avgMuB =
+        parsedPlayersB.reduce((sum, p) => sum + p.mu, 0) / teamBSize || 15;
+      const avgSigmaB =
+        parsedPlayersB.reduce((sum, p) => sum + p.sigma, 0) / teamBSize || 4;
+      const diff = teamASize - teamBSize;
+      for (let i = 0; i < diff; i++) {
+        augmentedTeamB.push(new Rating(avgMuB, avgSigmaB));
+      }
+    }
 
     const ranks: number[] = sqA.score > sqB.score ? [0, 1] : [1, 0];
 
-    const newRatings: Rating[][] = rate([teamA, teamB], ranks);
+    const newRatings: Rating[][] = rate(
+      [augmentedTeamA, augmentedTeamB],
+      ranks
+    );
 
     if (newRatings.length !== 2) {
       throw new Error("Unexpected TrueSkill rating output structure");
@@ -129,27 +151,24 @@ export async function updateElo(
 
     const updatePromises = [
       ...parsedPlayersA.map((p, i) => {
-        const newMu = newRatingsA[i].mu;
+        const newMuFromTrueSkill = newRatingsA[i].mu;
         const newSigma = newRatingsA[i].sigma;
-        const baseEloChange = (newMu - p.mu) * 100;
+
+        const baseMuChange = newMuFromTrueSkill - p.mu;
 
         const isWinner = sqA.score > sqB.score;
+        const multiplier = isWinner
+          ? scoreInfluence * underdogInfluence
+          : scoreInfluence / underdogInfluence;
 
-        const counteractionFactor = getTeamSizeCounteractionFactor(
-          squadASize,
-          squadBSize
-        );
+        const adjustedMuChange = baseMuChange * multiplier * gameWeight;
+        const newMu = p.mu + adjustedMuChange;
 
-        const eloChange = Math.round(
-          (isWinner
-            ? baseEloChange * scoreInfluence * underdogInfluence
-            : (baseEloChange * scoreInfluence) / underdogInfluence) *
-            gameWeight *
-            counteractionFactor
-        );
+        const eloChange = Math.round((newMu - p.mu) * 100);
+        const newElo = Math.round(newMu * 100);
 
         // Modify 'mu' directly based on score influence and rating difference
-        const newElo = p.elo + eloChange; // ✅ Compute Elo After
+        // const newElo = p.elo + eloChange; // ✅ Compute Elo After
         const newHighElo = newElo > p.highest_elo ? newElo : p.highest_elo;
 
         const newStats = updatePlayerStats(p, isWinner);
@@ -194,28 +213,24 @@ export async function updateElo(
         ]);
       }),
       ...parsedPlayersB.map((p, i) => {
-        const newMu = newRatingsB[i].mu;
+        const newMuFromTrueSkill = newRatingsB[i].mu;
         const newSigma = newRatingsB[i].sigma;
 
-        const baseEloChange = (newMu - p.mu) * 100;
+        const baseMuChange = newMuFromTrueSkill - p.mu;
 
-        const isWinner = sqB.score > sqB.score;
+        const isWinner = sqA.score < sqB.score;
+        const multiplier = isWinner
+          ? scoreInfluence * underdogInfluence
+          : scoreInfluence / underdogInfluence;
 
-        const counteractionFactor = getTeamSizeCounteractionFactor(
-          squadASize,
-          squadBSize
-        );
+        const adjustedMuChange = baseMuChange * multiplier * gameWeight;
+        const newMu = p.mu + adjustedMuChange;
 
-        const eloChange = Math.round(
-          (isWinner
-            ? baseEloChange * scoreInfluence * underdogInfluence
-            : (baseEloChange * scoreInfluence) / underdogInfluence) *
-            gameWeight *
-            counteractionFactor
-        );
+        const eloChange = Math.round((newMu - p.mu) * 100);
+        const newElo = Math.round(newMu * 100);
 
         // Modify 'mu' directly based on score influence and rating difference
-        const newElo = p.elo + eloChange; // ✅ Compute Elo After
+        // const newElo = p.elo + eloChange; // ✅ Compute Elo After
         const newHighElo = newElo > p.highest_elo ? newElo : p.highest_elo;
 
         const newStats = updatePlayerStats(p, isWinner);

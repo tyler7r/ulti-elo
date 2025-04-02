@@ -2,6 +2,7 @@ import Leaderboard from "@/components/Leaderboard";
 import GameHistory from "@/components/TeamHomePage/HistoryTab/GameHistory";
 import PlayTab from "@/components/TeamHomePage/PlayTab";
 import { useAuth } from "@/contexts/AuthContext";
+import { getTeamAvatarContent } from "@/lib/getTeamAvatarContent";
 import { supabase } from "@/lib/supabase";
 import { TeamType } from "@/lib/types";
 import LockIcon from "@mui/icons-material/Lock";
@@ -204,23 +205,6 @@ const TeamHomePage = () => {
 
   const handleNavigateToAdmin = () => {
     void router.push(`/team/${teamId}/admin`);
-  };
-
-  const getTeamAvatarContent = (
-    teamName: string | null | undefined
-  ): string => {
-    if (!teamName) {
-      return "";
-    }
-    const words = teamName.split(" ").filter((word) => word.length > 0);
-    let content = "";
-    if (words.length > 0) {
-      content += words[0].charAt(0).toUpperCase();
-      if (words.length > 1) {
-        content += words[1].charAt(0).toUpperCase();
-      }
-    }
-    return content;
   };
 
   return (

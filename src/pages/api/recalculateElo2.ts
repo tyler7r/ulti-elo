@@ -1,4 +1,3 @@
-import { getTeamSizeCounteractionFactor } from "@/lib/getCounteractionFactor";
 import { supabase } from "@/lib/supabase";
 import { GamePlayerType } from "@/lib/types"; // Adjust path if necessary
 import { rate, Rating } from "ts-trueskill"; // Changed import
@@ -185,6 +184,33 @@ export async function recalculateElo2(
         });
       });
 
+      const updates = previousGamePlayers.map(async (gp) => {
+        const { error: updatePlayerTeamsError } = await supabase
+          .from("player_teams")
+          .update({
+            mu: gp.mu_before,
+            sigma: gp.sigma_before,
+            elo: gp.elo_before,
+            elo_change: gp.elo_change_before,
+            highest_elo: gp.highest_elo_before,
+            wins: gp.wins_before,
+            losses: gp.losses_before,
+            win_streak: gp.win_streak_before,
+            loss_streak: gp.loss_streak_before,
+            win_percent: gp.win_percent_before,
+            longest_win_streak: gp.longest_win_streak_before,
+          })
+          .eq("id", gp.player_id); // gp.player_id now references player_teams.id
+        if (updatePlayerTeamsError) {
+          console.error(
+            `Error updating player_teams for ID ${gp.player_id}:`,
+            updatePlayerTeamsError
+          );
+          throw new Error("Failed to restore player stats");
+        }
+      });
+      await Promise.all(updates);
+
       // 4. Delete the game record from the games table
       const { error: deleteGameError } = await supabase
         .from("games")
@@ -210,11 +236,13 @@ export async function recalculateElo2(
       const { data: subsequentGamePlayer, error: fetchSubsequentGameError } =
         await supabase
           .from("game_players")
-          .select("*, games(match_date)")
+          .select(`*, games!inner(*)`)
           .eq("player_id", playerId)
           .gt("games.match_date", editedGame.match_date)
           .order("games(match_date)")
           .limit(1);
+
+      console.log({ subsequentGamePlayer });
       // Set current player stats?
 
       if (fetchSubsequentGameError) {
@@ -244,7 +272,6 @@ export async function recalculateElo2(
             .select("*")
             .eq("id", playerId)
             .single();
-
         if (fetchCurrentPlayerError) {
           console.error(
             "Error fetching current player:",
@@ -268,23 +295,12 @@ export async function recalculateElo2(
       }
     };
 
-    const getPlayerStatsBeforeGame = async (
-      gameId: string,
-      playerId: string
-      // currentPlayerStats: CurrentPlayerStats
-    ) => {
+    const getPlayerStatsBeforeGame = (gameId: string, playerId: string) => {
       if (gameId === editedGameId) {
         const statsBefore = playerStatsBeforeRecalculation.get(playerId);
 
         if (statsBefore) {
           return statsBefore;
-        } else {
-          // Player was likely added retroactively, check for subsequent games
-          const addedPlayerStats = await getAddedPlayerStatsBeforeGame(
-            playerId
-          );
-          processingPlayerStats.set(playerId, addedPlayerStats);
-          return;
         }
       }
       const currentStats = processingPlayerStats.get(playerId);
@@ -439,108 +455,115 @@ export async function recalculateElo2(
       if (fetchSquadBError) throw fetchSquadBError;
 
       const team1Players =
-        squadAGamePlayers?.map((sp) => {
-          const playerHasCurrentStats = processingPlayerStats.get(sp.player_id);
+        (await Promise.all(
+          squadAGamePlayers?.map(async (sp) => {
+            const playerHasCurrentStats = processingPlayerStats.get(
+              sp.player_id
+            );
 
-          if (playerHasCurrentStats) {
-            return {
-              player_id: sp.player_teams.players.id,
-              team_player_id: sp.player_id,
-              name: sp.player_teams.players.name,
-              squad_id: sp.squad_id,
-              ...playerHasCurrentStats,
-            };
-          } else {
-            return {
-              player_id: sp.player_teams.players.id,
-              team_player_id: sp.player_id,
-              name: sp.player_teams.players.name,
-              squad_id: sp.squad_id,
-              mu: sp.mu_before ?? 15.0,
-              sigma: sp.sigma_before ?? 4,
-              elo:
-                sp.elo_before === 0 || sp.elo_before === null
-                  ? 1500
-                  : sp.elo_before,
-              elo_change: sp.elo_change_before ?? 0,
-              highest_elo: sp.highest_elo_before ?? 1500,
-              wins: sp.wins_before ?? 0,
-              losses: sp.losses_before ?? 0,
-              win_percent: sp.win_percent_before ?? 0,
-              win_streak: sp.win_streak_before ?? 0,
-              loss_streak: sp.loss_streak_before ?? 0,
-              longest_win_streak: sp.longest_win_streak_before ?? 0,
-            };
-          }
-        }) || [];
+            if (playerHasCurrentStats) {
+              return {
+                player_id: sp.player_teams.players.id,
+                team_player_id: sp.player_id,
+                name: sp.player_teams.players.name,
+                squad_id: sp.squad_id,
+                ...playerHasCurrentStats,
+              };
+            } else {
+              // Player was likely added retroactively, check for subsequent games
+              const addedPlayerStats = await getAddedPlayerStatsBeforeGame(
+                sp.player_id
+              );
+              processingPlayerStats.set(sp.player_id, addedPlayerStats);
+              return {
+                player_id: sp.player_teams.players.id,
+                team_player_id: sp.player_id,
+                name: sp.player_teams.players.name,
+                squad_id: sp.squad_id,
+                ...addedPlayerStats,
+              };
+            }
+          })
+        )) || [];
+
       const team2Players =
-        squadBGamePlayers?.map((sp) => {
-          const playerHasCurrentStats = processingPlayerStats.get(sp.player_id);
+        (await Promise.all(
+          squadBGamePlayers?.map(async (sp) => {
+            const playerHasCurrentStats = processingPlayerStats.get(
+              sp.player_id
+            );
 
-          if (playerHasCurrentStats) {
-            return {
-              player_id: sp.player_teams.players.id,
-              team_player_id: sp.player_id,
-              name: sp.player_teams.players.name,
-              squad_id: sp.squad_id,
-              ...playerHasCurrentStats,
-            };
-          } else {
-            return {
-              player_id: sp.player_teams.players.id,
-              team_player_id: sp.player_id,
-              name: sp.player_teams.players.name,
-              squad_id: sp.squad_id,
-              mu: sp.mu_before ?? 15.0,
-              sigma: sp.sigma_before ?? 4,
-              elo:
-                sp.elo_before === 0 || sp.elo_before === null
-                  ? 1500
-                  : sp.elo_before,
-              elo_change: sp.elo_change_before ?? 0,
-              highest_elo: sp.highest_elo_before ?? 1500,
-              wins: sp.wins_before ?? 0,
-              losses: sp.losses_before ?? 0,
-              win_percent: sp.win_percent_before ?? 0,
-              win_streak: sp.win_streak_before ?? 0,
-              loss_streak: sp.loss_streak_before ?? 0,
-              longest_win_streak: sp.longest_win_streak_before ?? 0,
-            };
-          }
-        }) || [];
+            if (playerHasCurrentStats) {
+              return {
+                player_id: sp.player_teams.players.id,
+                team_player_id: sp.player_id,
+                name: sp.player_teams.players.name,
+                squad_id: sp.squad_id,
+                ...playerHasCurrentStats,
+              };
+            } else {
+              const addedPlayerStats = await getAddedPlayerStatsBeforeGame(
+                sp.player_id
+              );
+              processingPlayerStats.set(sp.player_id, addedPlayerStats);
+              return {
+                player_id: sp.player_teams.players.id,
+                team_player_id: sp.player_id,
+                name: sp.player_teams.players.name,
+                squad_id: sp.squad_id,
+                ...addedPlayerStats,
+              };
+            }
+          })
+        )) || [];
 
-      const squadASize = team1Players.length;
-      const squadBSize = team2Players.length;
+      const teamASize = team1Players.length;
+      const teamBSize = team2Players.length;
 
-      const teamA: Rating[] = await Promise.all(
-        team1Players.map(
-          async (p) =>
-            new Rating(
-              (await getPlayerStatsBeforeGame(game.id, p.team_player_id))?.mu ??
-                p.mu,
-              (
-                await getPlayerStatsBeforeGame(game.id, p.team_player_id)
-              )?.sigma ?? p.sigma
-            )
-        )
+      const augmentedTeamA: Rating[] = team1Players.map(
+        (p) =>
+          new Rating(
+            getPlayerStatsBeforeGame(game.id, p.team_player_id)?.mu ?? p.mu,
+            getPlayerStatsBeforeGame(game.id, p.team_player_id)?.sigma ??
+              p.sigma
+          )
       );
-      const teamB: Rating[] = await Promise.all(
-        team2Players.map(
-          async (p) =>
-            new Rating(
-              (await getPlayerStatsBeforeGame(game.id, p.team_player_id))?.mu ??
-                p.mu,
-              (
-                await getPlayerStatsBeforeGame(game.id, p.team_player_id)
-              )?.sigma ?? p.sigma
-            )
-        )
+      const augmentedTeamB: Rating[] = team2Players.map(
+        (p) =>
+          new Rating(
+            getPlayerStatsBeforeGame(game.id, p.team_player_id)?.mu ?? p.mu,
+            getPlayerStatsBeforeGame(game.id, p.team_player_id)?.sigma ??
+              p.sigma
+          )
       );
+
+      if (teamASize < teamBSize) {
+        const avgMuA =
+          team1Players.reduce((sum, p) => sum + p.mu, 0) / teamASize || 15;
+        const avgSigmaA =
+          team1Players.reduce((sum, p) => sum + p.sigma, 0) / teamASize || 4;
+        const diff = teamBSize - teamASize;
+        for (let i = 0; i < diff; i++) {
+          augmentedTeamA.push(new Rating(avgMuA, avgSigmaA));
+        }
+      } else if (teamBSize < teamASize) {
+        const avgMuB =
+          team2Players.reduce((sum, p) => sum + p.mu, 0) / teamBSize || 15;
+        const avgSigmaB =
+          team2Players.reduce((sum, p) => sum + p.sigma, 0) / teamBSize || 4;
+        const diff = teamASize - teamBSize;
+        for (let i = 0; i < diff; i++) {
+          augmentedTeamB.push(new Rating(avgMuB, avgSigmaB));
+        }
+      }
 
       const ranks: number[] =
         game.squad_a_score > game.squad_b_score ? [0, 1] : [1, 0];
 
-      const newRatings: Rating[][] = rate([teamA, teamB], ranks);
+      const newRatings: Rating[][] = rate(
+        [augmentedTeamA, augmentedTeamB],
+        ranks
+      );
 
       const score_margin = Math.abs(game.squad_a_score - game.squad_b_score);
       const total_score = game.squad_a_score + game.squad_b_score;
@@ -563,162 +586,162 @@ export async function recalculateElo2(
 
       if (newRatings.length === 2) {
         newRatings[0].forEach((rating, index) => {
-          const newMu = rating.mu;
-          const newSigma = rating.sigma;
-          const baseEloChange = (newMu - team1Players[index].mu) * 100;
+          if (index < team1Players.length) {
+            const newMu = rating.mu;
+            const newSigma = rating.sigma;
+            const baseEloChange = (newMu - team1Players[index].mu) * 100;
 
-          const isWinner = game.squad_a_score > game.squad_b_score;
-          const counteractionFactor = getTeamSizeCounteractionFactor(
-            squadASize,
-            squadBSize
-          );
+            const isWinner = game.squad_a_score > game.squad_b_score;
 
-          const eloChange = Math.round(
-            (isWinner
-              ? baseEloChange * scoreInfluence * underdogInfluence
-              : (baseEloChange * scoreInfluence) / underdogInfluence) *
-              gameWeight *
-              counteractionFactor
-          );
+            const eloChange = Math.round(
+              (isWinner
+                ? baseEloChange * scoreInfluence * underdogInfluence
+                : (baseEloChange * scoreInfluence) / underdogInfluence) *
+                gameWeight
+            );
 
-          const newElo = team1Players[index].elo + eloChange;
-          const newHighElo = Math.max(newElo, team1Players[index].highest_elo);
-          const newPlayerStats = updatePlayerStats(
-            team1Players[index].team_player_id,
-            newMu,
-            newSigma,
-            newElo,
-            eloChange,
-            newHighElo,
-            team1Players[index].wins,
-            team1Players[index].losses,
-            team1Players[index].win_streak,
-            team1Players[index].loss_streak,
-            team1Players[index].longest_win_streak,
-            isWinner
-          );
-          playersUpdates.push({
-            id: team1Players[index].team_player_id,
-            player_id: team1Players[index].player_id,
-            team_id: teamId,
-            mu: newMu,
-            sigma: newSigma,
-            elo: newElo,
-            elo_change: eloChange,
-            highest_elo: newHighElo,
-            wins: newPlayerStats.wins,
-            loss_streak: newPlayerStats.lossStreak,
-            win_streak: newPlayerStats.winStreak,
-            losses: newPlayerStats.losses,
-            longest_win_streak: newPlayerStats.longestWinStreak,
-            win_percent: newPlayerStats.winPercent,
-          });
-          gamePlayersUpdates.push({
-            player_id: team1Players[index].team_player_id,
-            game_id: game.id,
-            squad_id: team1Players[index].squad_id,
-            is_winner: isWinner,
-            elo_before: team1Players[index].elo,
-            elo_after: newElo,
-            mu_before: team1Players[index].mu,
-            sigma_before: team1Players[index].sigma,
-            wins_before: team1Players[index].wins,
-            losses_before: team1Players[index].losses,
-            win_streak_before: team1Players[index].win_streak,
-            win_percent_before: team1Players[index].win_percent,
-            loss_streak_before: team1Players[index].loss_streak,
-            longest_win_streak_before: team1Players[index].longest_win_streak,
-            elo_change_before: team1Players[index].elo_change,
-            mu_after: newMu,
-            sigma_after: newSigma,
-            wins_after: newPlayerStats.wins,
-            losses_after: newPlayerStats.losses,
-            win_streak_after: newPlayerStats.winStreak,
-            win_percent_after: newPlayerStats.winPercent,
-            loss_streak_after: newPlayerStats.lossStreak,
-            longest_win_streak_after: newPlayerStats.longestWinStreak,
-            elo_change_after: eloChange,
-            highest_elo_after: newHighElo,
-          });
+            const newElo = team1Players[index].elo + eloChange;
+            const newHighElo = Math.max(
+              newElo,
+              team1Players[index].highest_elo
+            );
+            const newPlayerStats = updatePlayerStats(
+              team1Players[index].team_player_id,
+              newMu,
+              newSigma,
+              newElo,
+              eloChange,
+              newHighElo,
+              team1Players[index].wins,
+              team1Players[index].losses,
+              team1Players[index].win_streak,
+              team1Players[index].loss_streak,
+              team1Players[index].longest_win_streak,
+              isWinner
+            );
+            playersUpdates.push({
+              id: team1Players[index].team_player_id,
+              player_id: team1Players[index].player_id,
+              team_id: teamId,
+              mu: newMu,
+              sigma: newSigma,
+              elo: newElo,
+              elo_change: eloChange,
+              highest_elo: newHighElo,
+              wins: newPlayerStats.wins,
+              loss_streak: newPlayerStats.lossStreak,
+              win_streak: newPlayerStats.winStreak,
+              losses: newPlayerStats.losses,
+              longest_win_streak: newPlayerStats.longestWinStreak,
+              win_percent: newPlayerStats.winPercent,
+            });
+            gamePlayersUpdates.push({
+              player_id: team1Players[index].team_player_id,
+              game_id: game.id,
+              squad_id: team1Players[index].squad_id,
+              is_winner: isWinner,
+              elo_before: team1Players[index].elo,
+              elo_after: newElo,
+              mu_before: team1Players[index].mu,
+              sigma_before: team1Players[index].sigma,
+              wins_before: team1Players[index].wins,
+              losses_before: team1Players[index].losses,
+              win_streak_before: team1Players[index].win_streak,
+              win_percent_before: team1Players[index].win_percent,
+              loss_streak_before: team1Players[index].loss_streak,
+              longest_win_streak_before: team1Players[index].longest_win_streak,
+              elo_change_before: team1Players[index].elo_change,
+              mu_after: newMu,
+              sigma_after: newSigma,
+              wins_after: newPlayerStats.wins,
+              losses_after: newPlayerStats.losses,
+              win_streak_after: newPlayerStats.winStreak,
+              win_percent_after: newPlayerStats.winPercent,
+              loss_streak_after: newPlayerStats.lossStreak,
+              longest_win_streak_after: newPlayerStats.longestWinStreak,
+              elo_change_after: eloChange,
+              highest_elo_after: newHighElo,
+            });
+          }
         });
         newRatings[1].forEach((rating, index) => {
-          const newMu = rating.mu;
-          const newSigma = rating.sigma;
-          const baseEloChange = (newMu - team2Players[index].mu) * 100;
+          if (index < team2Players.length) {
+            const newMu = rating.mu;
+            const newSigma = rating.sigma;
+            const baseEloChange = (newMu - team2Players[index].mu) * 100;
 
-          const isWinner = game.squad_a_score < game.squad_b_score;
-          const counteractionFactor = getTeamSizeCounteractionFactor(
-            squadASize,
-            squadBSize
-          );
+            const isWinner = game.squad_a_score < game.squad_b_score;
 
-          const eloChange = Math.round(
-            (isWinner
-              ? baseEloChange * scoreInfluence * underdogInfluence
-              : (baseEloChange * scoreInfluence) / underdogInfluence) *
-              gameWeight *
-              counteractionFactor
-          );
+            const eloChange = Math.round(
+              (isWinner
+                ? baseEloChange * scoreInfluence * underdogInfluence
+                : (baseEloChange * scoreInfluence) / underdogInfluence) *
+                gameWeight
+            );
 
-          const newElo = team2Players[index].elo + eloChange;
-          const newHighElo = Math.max(newElo, team2Players[index].highest_elo);
-          const newPlayerStats = updatePlayerStats(
-            team2Players[index].team_player_id,
-            newMu,
-            newSigma,
-            newElo,
-            eloChange,
-            newHighElo,
-            team2Players[index].wins,
-            team2Players[index].losses,
-            team2Players[index].win_streak,
-            team2Players[index].loss_streak,
-            team2Players[index].longest_win_streak,
-            isWinner
-          );
-          playersUpdates.push({
-            id: team2Players[index].team_player_id,
-            player_id: team2Players[index].player_id,
-            team_id: teamId,
-            mu: newMu,
-            sigma: newSigma,
-            elo: newElo,
-            elo_change: eloChange,
-            highest_elo: newHighElo,
-            wins: newPlayerStats.wins,
-            loss_streak: newPlayerStats.lossStreak,
-            win_streak: newPlayerStats.winStreak,
-            losses: newPlayerStats.losses,
-            longest_win_streak: newPlayerStats.longestWinStreak,
-            win_percent: newPlayerStats.winPercent,
-          });
-          gamePlayersUpdates.push({
-            player_id: team2Players[index].team_player_id,
-            game_id: game.id,
-            squad_id: team2Players[index].squad_id,
-            is_winner: isWinner,
-            elo_before: team2Players[index].elo,
-            elo_after: newElo,
-            mu_before: team2Players[index].mu,
-            sigma_before: team2Players[index].sigma,
-            wins_before: team2Players[index].wins,
-            losses_before: team2Players[index].losses,
-            win_streak_before: team2Players[index].win_streak,
-            win_percent_before: team2Players[index].win_percent,
-            loss_streak_before: team2Players[index].loss_streak,
-            longest_win_streak_before: team2Players[index].longest_win_streak,
-            elo_change_before: team2Players[index].elo_change,
-            mu_after: newMu,
-            sigma_after: newSigma,
-            wins_after: newPlayerStats.wins,
-            losses_after: newPlayerStats.losses,
-            win_streak_after: newPlayerStats.winStreak,
-            win_percent_after: newPlayerStats.winPercent,
-            loss_streak_after: newPlayerStats.lossStreak,
-            longest_win_streak_after: newPlayerStats.longestWinStreak,
-            elo_change_after: eloChange,
-            highest_elo_after: newHighElo,
-          });
+            const newElo = team2Players[index].elo + eloChange;
+            const newHighElo = Math.max(
+              newElo,
+              team2Players[index].highest_elo
+            );
+            const newPlayerStats = updatePlayerStats(
+              team2Players[index].team_player_id,
+              newMu,
+              newSigma,
+              newElo,
+              eloChange,
+              newHighElo,
+              team2Players[index].wins,
+              team2Players[index].losses,
+              team2Players[index].win_streak,
+              team2Players[index].loss_streak,
+              team2Players[index].longest_win_streak,
+              isWinner
+            );
+            playersUpdates.push({
+              id: team2Players[index].team_player_id,
+              player_id: team2Players[index].player_id,
+              team_id: teamId,
+              mu: newMu,
+              sigma: newSigma,
+              elo: newElo,
+              elo_change: eloChange,
+              highest_elo: newHighElo,
+              wins: newPlayerStats.wins,
+              loss_streak: newPlayerStats.lossStreak,
+              win_streak: newPlayerStats.winStreak,
+              losses: newPlayerStats.losses,
+              longest_win_streak: newPlayerStats.longestWinStreak,
+              win_percent: newPlayerStats.winPercent,
+            });
+            gamePlayersUpdates.push({
+              player_id: team2Players[index].team_player_id,
+              game_id: game.id,
+              squad_id: team2Players[index].squad_id,
+              is_winner: isWinner,
+              elo_before: team2Players[index].elo,
+              elo_after: newElo,
+              mu_before: team2Players[index].mu,
+              sigma_before: team2Players[index].sigma,
+              wins_before: team2Players[index].wins,
+              losses_before: team2Players[index].losses,
+              win_streak_before: team2Players[index].win_streak,
+              win_percent_before: team2Players[index].win_percent,
+              loss_streak_before: team2Players[index].loss_streak,
+              longest_win_streak_before: team2Players[index].longest_win_streak,
+              elo_change_before: team2Players[index].elo_change,
+              mu_after: newMu,
+              sigma_after: newSigma,
+              wins_after: newPlayerStats.wins,
+              losses_after: newPlayerStats.losses,
+              win_streak_after: newPlayerStats.winStreak,
+              win_percent_after: newPlayerStats.winPercent,
+              loss_streak_after: newPlayerStats.lossStreak,
+              longest_win_streak_after: newPlayerStats.longestWinStreak,
+              elo_change_after: eloChange,
+              highest_elo_after: newHighElo,
+            });
+          }
         });
       }
       if (playersUpdates.length > 0) {
@@ -733,6 +756,7 @@ export async function recalculateElo2(
           .upsert(gamePlayersUpdates);
         if (gamePlayersBatchError)
           console.error("Batch Game Players Update Error");
+        console.log(gamePlayersBatchError);
       }
       // Update processingPlayerStats for the next game
       gamePlayersUpdates.forEach((gpu) => {
