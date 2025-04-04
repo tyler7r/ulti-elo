@@ -31,7 +31,7 @@ const InfoModal: React.FC = () => {
         color="secondary"
         size="small"
       >
-        <InfoIcon />
+        <InfoIcon fontSize="small" />
       </IconButton>
 
       {/* Modal */}

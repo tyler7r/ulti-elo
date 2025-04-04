@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { NextApiRequest, NextApiResponse } from "next";
 
 interface SquadPlayer {
-  id: string;
+  pt_id: string;
   name: string;
   elo_before: number;
   elo_after: number;
@@ -29,10 +29,10 @@ interface Game {
 interface GameDetailsResponse {
   game: Game;
   squadA: Squad & {
-    players: { id: string; name: string; is_winner?: boolean }[];
+    players: { pt_id: string; name: string; is_winner?: boolean }[];
   };
   squadB: Squad & {
-    players: { id: string; name: string; is_winner?: boolean }[];
+    players: { pt_id: string; name: string; is_winner?: boolean }[];
   };
 }
 
@@ -88,7 +88,7 @@ export default async function handler(
       const { data: gamePlayersA, error: gamePlayersAError } = await supabase
         .from("game_players")
         .select(
-          "player_id, is_winner, elo_before, elo_after, player_teams(id, players(name, id))"
+          "pt_id, is_winner, elo_before, elo_after, player_teams(player_id, players(name, id))"
         )
         .eq("game_id", gameId)
         .eq("squad_id", game.squad_a_id);
@@ -106,7 +106,7 @@ export default async function handler(
       const { data: gamePlayersB, error: gamePlayersBError } = await supabase
         .from("game_players")
         .select(
-          "player_id, is_winner, elo_before, elo_after, player_teams(id, players(name, id))"
+          "pt_id, is_winner, elo_before, elo_after, player_teams(player_id, players(name, id))"
         )
         .eq("game_id", gameId)
         .eq("squad_id", game.squad_b_id);
@@ -124,8 +124,8 @@ export default async function handler(
       const formattedSquadA = {
         ...squadA,
         players: gamePlayersA.map((sp) => ({
-          id: sp.player_teams.id,
-          player_id: sp.player_id,
+          pt_id: sp.pt_id,
+          player_id: sp.player_teams.player_id,
           name: sp.player_teams.players.name,
           elo_before: sp.elo_before,
           elo_after: sp.elo_after,
@@ -136,8 +136,8 @@ export default async function handler(
       const formattedSquadB = {
         ...squadB,
         players: gamePlayersB.map((sp) => ({
-          id: sp.player_teams.id,
-          player_id: sp.player_id,
+          pt_id: sp.pt_id,
+          player_id: sp.player_teams.player_id,
           name: sp.player_teams.players.name,
           elo_before: sp.elo_before,
           elo_after: sp.elo_after,

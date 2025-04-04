@@ -1,3 +1,4 @@
+import { getRank } from "@/lib/getRank";
 import { supabase } from "@/lib/supabase";
 import { NewPlayerType } from "@/lib/types";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -24,24 +25,15 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
+import Image from "next/image";
+import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import HotPlayers from "./HotPlayers";
+import NoLogoAvatar from "./Utils/NoLogoAvatar";
 
 interface LeaderboardProps {
   teamId?: string;
 }
-
-// Function to determine player rank based on Elo
-const getRank = (elo: number) => {
-  if (elo >= 2200) return { icon: "👑", name: "Apex" };
-  if (elo >= 2000) return { icon: "⚡", name: "Legend" };
-  if (elo >= 1800) return { icon: "🏆", name: "Master" };
-  if (elo >= 1600) return { icon: "💎", name: "Diamond" };
-  if (elo >= 1400) return { icon: "🌟", name: "Platinum" };
-  if (elo >= 1200) return { icon: "⚔️", name: "Elite" };
-  if (elo >= 800) return { icon: "🛡️", name: "Competitor" };
-  return { icon: "👶", name: "Recruit" };
-};
 
 const rankInfo = [
   { name: "Recruit", icon: "👶", elo: "Below 800" },
@@ -62,6 +54,7 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
   const [teamName, setTeamName] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [hotPlayers, setHotPlayers] = useState<NewPlayerType[]>([]);
+  const router = useRouter();
 
   const theme = useTheme();
 
@@ -106,7 +99,7 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
         const { data, error } = await supabase
           .from("player_teams")
           .select(
-            `*, players(name)
+            `*, teams!inner(logo_url, id, name), players!inner(name)
         `
           )
           .or("wins.gt.0, losses.gt.0")
@@ -140,6 +133,10 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
       setSortBy(column);
       setSortDirection("desc");
     }
+  };
+
+  const handlePlayerClick = (playerId: string) => {
+    void router.push(`/player/${playerId}`);
   };
 
   if (loading) {
@@ -337,6 +334,11 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
                 >
                   Streak
                 </TableCell>
+                {!teamId && (
+                  <TableCell sx={{ zIndex: 1, fontWeight: "bold" }}>
+                    Team
+                  </TableCell>
+                )}
               </TableRow>
             </TableHead>
 
@@ -345,7 +347,10 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
                 const rank = getRank(player.elo);
 
                 return (
-                  <TableRow key={player.player_id + player.team_id}>
+                  <TableRow
+                    key={player.player_id + player.team_id}
+                    sx={{ cursor: "default" }}
+                  >
                     {/* Rank Column */}
                     <TableCell
                       sx={{
@@ -376,7 +381,9 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
                         whiteSpace: "nowrap",
                         overflow: "scroll",
                         textOverflow: "ellipsis",
+                        cursor: "pointer",
                       }}
+                      onClick={() => handlePlayerClick(player.player_id)}
                     >
                       <span>{rank.icon}</span>
                       <span>{player.name}</span>
@@ -388,14 +395,15 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
                         <Typography variant="body2">{player.elo}</Typography>
                         <div className={`flex items-center`}>
                           {player.elo_change > 0 ? (
-                            <ArrowDropUpIcon color="success" />
+                            <ArrowDropUpIcon color="success" fontSize="small" />
                           ) : player.elo_change < 0 ? (
-                            <ArrowDropDownIcon color="error" />
+                            <ArrowDropDownIcon color="error" fontSize="small" />
                           ) : (
-                            <ArrowRightIcon color="disabled" />
+                            <ArrowRightIcon color="disabled" fontSize="small" />
                           )}
                           <Typography
                             variant="body2"
+                            fontWeight={"bold"}
                             color={
                               player.elo_change > 0
                                 ? "success"
@@ -404,7 +412,9 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
                                 : "textDisabled"
                             }
                           >
-                            {player.elo_change}
+                            {player.elo_change < 0
+                              ? player.elo_change * -1
+                              : player.elo_change}
                           </Typography>
                         </div>
                       </div>
@@ -431,6 +441,35 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
                         </span>
                       )}
                     </TableCell>
+                    {!teamId &&
+                      (player.teams ? (
+                        <TableCell
+                          onClick={() =>
+                            void router.push(`/team/${player.teams?.id}`)
+                          }
+                        >
+                          {player.teams.logo_url ? (
+                            <Image
+                              src={player.teams.logo_url}
+                              alt={`${player.teams.name} Logo`}
+                              width={30}
+                              height={30}
+                              className="rounded-sm cursor-pointer"
+                              onClick={() =>
+                                void router.push(`/team/${player.teams?.id}`)
+                              }
+                            />
+                          ) : (
+                            <NoLogoAvatar
+                              size="x-small"
+                              name={player.teams.name}
+                              leaderboard={true}
+                            />
+                          )}
+                        </TableCell>
+                      ) : (
+                        <TableCell className="font-bold">N/A</TableCell>
+                      ))}
                   </TableRow>
                 );
               })}

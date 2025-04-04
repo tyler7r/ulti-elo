@@ -1,8 +1,9 @@
+import NoLogoAvatar from "@/components/Utils/NoLogoAvatar";
 import { supabase } from "@/lib/supabase";
+import { PlayerType } from "@/lib/types";
 import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
 import {
   Autocomplete,
-  Avatar,
   Box,
   Button,
   Dialog,
@@ -27,11 +28,6 @@ type TeamPlayer = {
   };
 };
 
-type Player = {
-  id: string;
-  name: string;
-};
-
 type TeamPlayersTabProps = {
   teamId: string;
   teamPlayers: TeamPlayer[];
@@ -47,10 +43,10 @@ const TeamPlayersTab = ({
   setSnackbarMessage,
   setSnackbarOpen,
 }: TeamPlayersTabProps) => {
-  const [selectedPlayersToAdd, setSelectedPlayersToAdd] = useState<Player[]>(
-    []
-  );
-  const [availablePlayers, setAvailablePlayers] = useState<Player[]>([]);
+  const [selectedPlayersToAdd, setSelectedPlayersToAdd] = useState<
+    PlayerType[]
+  >([]);
+  const [availablePlayers, setAvailablePlayers] = useState<PlayerType[]>([]);
   const [loadingAvailablePlayers, setLoadingAvailablePlayers] = useState(true);
   const [confirmDeleteDialogOpen, setConfirmDeleteDialogOpen] = useState(false);
   const [playerToDelete, setPlayerToDelete] = useState<TeamPlayer | null>(null);
@@ -190,7 +186,7 @@ const TeamPlayersTab = ({
         {teamPlayers.map((player) => (
           <ListItem key={player.player_id} sx={{ position: "relative" }}>
             <ListItemAvatar>
-              <Avatar>{player.player.name.charAt(0) || "?"}</Avatar>
+              <NoLogoAvatar size="small" name={player.player.name} />
             </ListItemAvatar>
             <ListItemText
               primary={player.player.name || "Unknown Player"}

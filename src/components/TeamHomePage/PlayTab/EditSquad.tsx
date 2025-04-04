@@ -80,7 +80,7 @@ const EditSquad = ({
       // Fetch players associated with the squad
       const { data: squadPlayers, error: squadPlayersError } = await supabase
         .from("squad_players")
-        .select("player_id, player_teams!inner(*, player:players(name))")
+        .select("pt_id, player_teams!inner(*, player:players(name))")
         .eq("squad_id", squadId)
         .eq("active", true);
       if (squadPlayersError) {
@@ -147,20 +147,20 @@ const EditSquad = ({
       if (updateError) throw updateError;
 
       // Identify players to add, keep, and remove
-      const currentPlayerIds = initialPlayers.map((p) => p.id);
-      const newPlayerIds = selectedPlayers.map((p) => p.id);
+      const currentPlayerIds = initialPlayers.map((p) => p.pt_id);
+      const newPlayerIds = selectedPlayers.map((p) => p.pt_id);
 
       const playersToAdd = selectedPlayers.filter(
-        (p) => !currentPlayerIds.includes(p.id)
+        (p) => !currentPlayerIds.includes(p.pt_id)
       );
       const playersToRemove = initialPlayers.filter(
-        (p) => !newPlayerIds.includes(p.id)
+        (p) => !newPlayerIds.includes(p.pt_id)
       );
 
       // 🟢 Add new players with first and last game numbers
       if (playersToAdd.length > 0) {
         const newSquadPlayers = playersToAdd.map((player) => ({
-          player_id: player.id,
+          pt_id: player.pt_id,
           squad_id: squadId,
           active: true,
         }));
@@ -179,7 +179,7 @@ const EditSquad = ({
             .from("squad_players")
             .update({ active: false })
             .eq("squad_id", squadId)
-            .eq("player_id", player.id);
+            .eq("pt_id", player.pt_id);
 
           if (removeError) throw removeError;
         }
@@ -290,16 +290,17 @@ const EditSquad = ({
                 <Autocomplete
                   multiple
                   options={players.filter(
-                    (player) => !selectedPlayers.some((p) => p.id === player.id)
+                    (player) =>
+                      !selectedPlayers.some((p) => p.pt_id === player.pt_id)
                   )}
                   getOptionLabel={(option) => `${option.player.name}`} // Display only name
                   value={selectedPlayers}
                   onChange={(_, newValue) => handlePlayerSelect(newValue)}
                   isOptionEqualToValue={(option, value) =>
-                    option.id === value.id
+                    option.pt_id === value.pt_id
                   }
                   renderOption={(props, option) => (
-                    <li {...props} key={option.id}>
+                    <li {...props} key={option.pt_id}>
                       {option.player.name} (ELO: {option.elo})
                     </li>
                   )}

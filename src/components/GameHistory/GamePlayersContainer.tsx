@@ -11,10 +11,11 @@ type GamePlayersContainerType = {
 
 export type GamePlayersType = {
   name: string;
-  id: string;
+  pt_id: string;
   elo_before: number;
   elo_after: number;
   is_winner: boolean;
+  player_id: string;
 };
 
 const GamePlayersContainer = ({
@@ -69,7 +70,7 @@ const GamePlayersContainer = ({
             await supabase
               .from("game_players")
               .select(
-                "player_id, is_winner, elo_before, elo_after, player_teams(players(name))"
+                "pt_id, is_winner, elo_before, elo_after, player_teams(player_id, players(name))"
               )
               .eq("game_id", game.id)
               .eq("squad_id", game.squad_a_id);
@@ -86,7 +87,7 @@ const GamePlayersContainer = ({
             await supabase
               .from("game_players")
               .select(
-                "player_id, is_winner, elo_before, elo_after, player_teams(players(name))"
+                "pt_id, is_winner, elo_before, elo_after, player_teams(player_id, players(name))"
               )
               .eq("game_id", game.id)
               .eq("squad_id", game.squad_b_id);
@@ -102,7 +103,8 @@ const GamePlayersContainer = ({
 
           const sqAPlayers = SquadAGamePlayers.map((p) => ({
             name: p.player_teams.players.name,
-            id: p.player_id,
+            pt_id: p.pt_id,
+            player_id: p.player_teams.player_id,
             elo_before: p.elo_before,
             elo_after: p.elo_after,
             is_winner: p.is_winner,
@@ -110,7 +112,8 @@ const GamePlayersContainer = ({
 
           const sqBPlayers = SquadBGamePlayers.map((p) => ({
             name: p.player_teams.players.name,
-            id: p.player_id,
+            pt_id: p.pt_id,
+            player_id: p.player_teams.player_id,
             elo_before: p.elo_before,
             elo_after: p.elo_after,
             is_winner: p.is_winner,

@@ -36,13 +36,13 @@ const OverlappingPlayers = ({
     if (squadA && squadA.id === squadId) {
       setSquadA({
         ...squadA,
-        players: squadA.players.filter((p) => p.id !== player.id),
+        players: squadA.players.filter((p) => p.pt_id !== player.pt_id),
       });
     }
     if (squadB && squadB.id === squadId) {
       setSquadB({
         ...squadB,
-        players: squadB.players.filter((p) => p.id !== player.id),
+        players: squadB.players.filter((p) => p.pt_id !== player.pt_id),
       });
     }
 
@@ -50,7 +50,7 @@ const OverlappingPlayers = ({
       const { error } = await supabase
         .from("squad_players")
         .update({ active: false })
-        .eq("player_id", player.id)
+        .eq("pt_id", player.pt_id)
         .eq("squad_id", squadId);
       if (error) {
         setAlert({ message: error.message, severity: "error" });
@@ -92,7 +92,7 @@ const OverlappingPlayers = ({
           </TableHead>
           <TableBody>
             {overlappingPlayers.map((player) => (
-              <TableRow key={player.id}>
+              <TableRow key={player.pt_id}>
                 <TableCell sx={{ fontWeight: "bold" }}>
                   {player.elo
                     ? `${player.name} (ELO: ${player.elo})`

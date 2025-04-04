@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { AlertType } from "@/lib/types";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import {
   Alert,
@@ -23,7 +24,10 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [alert, setAlert] = useState<AlertType>({
+    message: null,
+    severity: "error",
+  });
   const [showPwd, setShowPwd] = useState(false);
 
   const [forgotPasswordDialog, setForgotPasswordDialog] = useState(false);
@@ -36,7 +40,7 @@ const Login = () => {
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
+    setAlert({ message: null, severity: "error" });
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -44,10 +48,16 @@ const Login = () => {
     });
 
     if (error) {
-      setError(error.message);
+      setAlert({ message: error.message, severity: "error" });
     } else {
+      setAlert({
+        message: "Login successful! Redirecting...",
+        severity: "success",
+      });
       refreshUser();
-      router.push("/"); // Redirect to homepage after login
+      setTimeout(() => {
+        void router.push("/");
+      }, 500); // Redirect to homepage after login
     }
 
     setLoading(false);
@@ -64,15 +74,25 @@ const Login = () => {
     if (error) {
       setForgotPasswordMessage("Failed to send reset email. Please try again.");
     } else {
-      setForgotPasswordMessage("Password reset email sent successfully.");
+      setForgotPasswordMessage(
+        "Password reset email sent successfully. Check your spam folder!"
+      );
     }
 
     setForgotPasswordLoading(false);
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="shadow-md rounded-lg p-6 w-full max-w-md">
+    <div className="flex justify-center items-center mt-16 flex-col">
+      <Typography
+        variant="h4"
+        color="secondary"
+        fontWeight={"bold"}
+        fontStyle={"italic"}
+      >
+        Welcome to Ulti ELO
+      </Typography>
+      <div className="p-6 mt-8 w-full max-w-md">
         <Typography
           variant="h4"
           fontWeight={"bold"}
@@ -123,9 +143,9 @@ const Login = () => {
             }}
           />
 
-          {error && (
-            <Alert severity="error" className="mb-4">
-              {error}
+          {alert.message && (
+            <Alert severity={alert.severity} className="mb-4">
+              {alert.message}
             </Alert>
           )}
 

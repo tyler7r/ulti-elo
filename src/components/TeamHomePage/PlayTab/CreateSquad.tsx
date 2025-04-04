@@ -85,7 +85,7 @@ const CreateSquad = ({
       const squadId = squad.id;
       const squadPlayers = [
         ...selectedPlayers.map((player) => ({
-          player_id: player.id,
+          pt_id: player.pt_id,
           squad_id: squadId,
         })),
       ];
@@ -172,16 +172,17 @@ const CreateSquad = ({
                 <Autocomplete
                   multiple
                   options={players.filter(
-                    (player) => !selectedPlayers.some((p) => p.id === player.id)
+                    (player) =>
+                      !selectedPlayers.some((p) => p.pt_id === player.pt_id)
                   )}
                   getOptionLabel={(option) => `${option.player.name}`} // Display only name
                   value={selectedPlayers}
                   onChange={(_, newValue) => handlePlayerSelect(newValue)}
                   isOptionEqualToValue={(option, value) =>
-                    option.id === value.id
+                    option.pt_id === value.pt_id
                   }
                   renderOption={(props, option) => (
-                    <li {...props} key={option.id}>
+                    <li {...props} key={option.pt_id}>
                       {option.player.name} (ELO: {option.elo})
                     </li>
                   )}

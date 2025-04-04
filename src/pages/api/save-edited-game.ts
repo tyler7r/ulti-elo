@@ -101,9 +101,9 @@ export default async function handler(
 
       // Insert new game players for squad A
       const gamePlayersA = squadAPlayers.map(
-        (player: { id: string; player_id: string }) => ({
+        (player: { pt_id: string; player_id: string }) => ({
           game_id: gameId,
-          player_id: player.id,
+          pt_id: player.pt_id,
           squad_id: squadAId,
           is_winner: squadAScore > squadBScore,
         })
@@ -124,9 +124,9 @@ export default async function handler(
 
       // Insert new game players for squad B
       const gamePlayersB = squadBPlayers.map(
-        (player: { id: string; player_id: string }) => ({
+        (player: { pt_id: string; player_id: string }) => ({
           game_id: gameId,
-          player_id: player.id,
+          pt_id: player.pt_id,
           squad_id: squadBId,
           is_winner: squadBScore > squadAScore,
         })

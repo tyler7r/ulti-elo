@@ -105,7 +105,7 @@ export type Database = {
           losses_before: number
           mu_after: number
           mu_before: number
-          player_id: string
+          pt_id: string
           sigma_after: number
           sigma_before: number
           squad_id: string
@@ -133,7 +133,7 @@ export type Database = {
           losses_before?: number
           mu_after?: number
           mu_before?: number
-          player_id?: string
+          pt_id?: string
           sigma_after?: number
           sigma_before?: number
           squad_id: string
@@ -161,7 +161,7 @@ export type Database = {
           losses_before?: number
           mu_after?: number
           mu_before?: number
-          player_id?: string
+          pt_id?: string
           sigma_after?: number
           sigma_before?: number
           squad_id?: string
@@ -182,10 +182,10 @@ export type Database = {
           },
           {
             foreignKeyName: "game_players_player_id_fkey"
-            columns: ["player_id"]
+            columns: ["pt_id"]
             isOneToOne: false
             referencedRelation: "player_teams"
-            referencedColumns: ["id"]
+            referencedColumns: ["pt_id"]
           },
           {
             foreignKeyName: "game_players_squad_id_fkey"
@@ -256,12 +256,13 @@ export type Database = {
           elo: number
           elo_change: number
           highest_elo: number
-          id: string
+          last_updated: string
           longest_win_streak: number
           loss_streak: number
           losses: number
           mu: number
           player_id: string
+          pt_id: string
           sigma: number
           team_id: string
           win_percent: number
@@ -272,12 +273,13 @@ export type Database = {
           elo?: number
           elo_change?: number
           highest_elo?: number
-          id?: string
+          last_updated?: string
           longest_win_streak?: number
           loss_streak?: number
           losses?: number
           mu?: number
           player_id: string
+          pt_id?: string
           sigma?: number
           team_id: string
           win_percent?: number
@@ -288,12 +290,13 @@ export type Database = {
           elo?: number
           elo_change?: number
           highest_elo?: number
-          id?: string
+          last_updated?: string
           longest_win_streak?: number
           loss_streak?: number
           losses?: number
           mu?: number
           player_id?: string
+          pt_id?: string
           sigma?: number
           team_id?: string
           win_percent?: number
@@ -335,26 +338,26 @@ export type Database = {
       squad_players: {
         Row: {
           active: boolean
-          player_id: string
+          pt_id: string
           squad_id: string
         }
         Insert: {
           active?: boolean
-          player_id?: string
+          pt_id?: string
           squad_id?: string
         }
         Update: {
           active?: boolean
-          player_id?: string
+          pt_id?: string
           squad_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "squad_players_player_id_fkey"
-            columns: ["player_id"]
+            columns: ["pt_id"]
             isOneToOne: false
             referencedRelation: "player_teams"
-            referencedColumns: ["id"]
+            referencedColumns: ["pt_id"]
           },
           {
             foreignKeyName: "squad_players_squad_id_fkey"

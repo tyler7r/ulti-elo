@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/router";
 import { useState } from "react";
-import GamePlayersContainer from "./GamePlayersContainer";
+import GamePlayersContainer from "../../GameHistory/GamePlayersContainer";
 
 type SingleGameViewProps = {
   game: GameHistoryType;

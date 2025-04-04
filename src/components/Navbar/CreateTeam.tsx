@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { Player } from "@/lib/types";
+import { PlayerType } from "@/lib/types";
 import CloseIcon from "@mui/icons-material/Close";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import DeleteIcon from "@mui/icons-material/Delete"; // Import the delete icon
@@ -29,8 +29,8 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
   const router = useRouter();
 
   const [name, setName] = useState("");
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
+  const [players, setPlayers] = useState<PlayerType[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<PlayerType[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchingPlayers, setFetchingPlayers] = useState(true);
   const [error, setError] = useState("");

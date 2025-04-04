@@ -1,15 +1,14 @@
+import GameHistory from "@/components/GameHistory/GameHistory";
 import Leaderboard from "@/components/Leaderboard";
-import GameHistory from "@/components/TeamHomePage/HistoryTab/GameHistory";
 import PlayTab from "@/components/TeamHomePage/PlayTab";
+import NoLogoAvatar from "@/components/Utils/NoLogoAvatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { getTeamAvatarContent } from "@/lib/getTeamAvatarContent";
 import { supabase } from "@/lib/supabase";
 import { TeamType } from "@/lib/types";
 import LockIcon from "@mui/icons-material/Lock";
 import SettingsIcon from "@mui/icons-material/Settings";
 import {
   Alert,
-  Avatar,
   Badge,
   Box,
   Button,
@@ -214,21 +213,12 @@ const TeamHomePage = () => {
           <Image
             src={team.logo_url}
             alt={`${team.name} Logo`}
-            width={40} // Adjust size as needed
-            height={40} // Adjust size as needed
-            className="rounded-full mr-2" // Optional: Add rounded corners with Tailwind CSS
-            onError={(e) => {
-              // Fallback to generic avatar if the team logo fails to load
-              e.currentTarget.style.display = "none";
-            }}
+            width={50} // Adjust size as needed
+            height={50} // Adjust size as needed
+            className="rounded mr-2" // Optional: Add rounded corners with Tailwind CSS
           />
         ) : (
-          <Avatar
-            alt={`${team?.name} Avatar`}
-            sx={{ width: 40, height: 40, mr: 2 }}
-          >
-            {getTeamAvatarContent(team?.name)}
-          </Avatar>
+          team?.name && <NoLogoAvatar size="large" name={team.name} />
         )}
         <Typography
           variant={isSmallScreen ? "h4" : "h3"}
