@@ -16,8 +16,8 @@ const NoLogoAvatar = ({ name, size, leaderboard }: NoLogoAvatarProps) => {
         }
       : size === "x-small"
       ? {
-          width: { xs: 24, sm: 26 },
-          height: { xs: 24, sm: 26 },
+          width: { xs: 20, sm: 24 },
+          height: { xs: 20, sm: 24 },
         }
       : {
           width: { xs: 40, sm: 48 },

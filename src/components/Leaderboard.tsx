@@ -452,8 +452,8 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
                             <Image
                               src={player.teams.logo_url}
                               alt={`${player.teams.name} Logo`}
-                              width={30}
-                              height={30}
+                              width={24}
+                              height={24}
                               className="rounded-sm cursor-pointer"
                               onClick={() =>
                                 void router.push(`/team/${player.teams?.id}`)
