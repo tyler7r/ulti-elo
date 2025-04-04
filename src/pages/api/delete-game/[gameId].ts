@@ -80,10 +80,10 @@ export default async function handler(
               win_percent: gp.win_percent_before,
               longest_win_streak: gp.longest_win_streak_before,
             })
-            .eq("id", gp.player_id); // gp.player_id now references player_teams.id
+            .eq("pt_id", gp.pt_id); // gp.player_id now references player_teams.id
           if (updatePlayerTeamsError) {
             console.error(
-              `Error updating player_teams for ID ${gp.player_id}:`,
+              `Error updating player_teams for ID ${gp.pt_id}:`,
               updatePlayerTeamsError
             );
             throw new Error("Failed to restore player stats");

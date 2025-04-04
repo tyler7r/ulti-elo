@@ -40,13 +40,13 @@ export async function submitGame({
       ...sqA.players.map((player) => ({
         squad_id: sqA.id,
         game_id: gameId,
-        player_id: player.id,
+        pt_id: player.pt_id,
         is_winner: sqA.score > sqB.score,
       })),
       ...sqB.players.map((player) => ({
         squad_id: sqB.id,
         game_id: gameId,
-        player_id: player.id,
+        pt_id: player.pt_id,
         is_winner: sqB.score > sqA.score,
       })),
     ];

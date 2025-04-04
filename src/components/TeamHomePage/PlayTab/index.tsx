@@ -41,7 +41,7 @@ const PlayTab = ({ team }: PlayTabType) => {
     const { data: newSquads, error: newSquadsError } = await supabase
       .from("squads")
       .select(
-        "id, name, squad_players(player_id, active, player_teams(*, player: players(name)))"
+        "id, name, squad_players(pt_id, active, player_teams(*, player: players(name)))"
       )
       .eq("team_id", teamId)
       .eq("active", true)
@@ -168,7 +168,7 @@ const PlayTab = ({ team }: PlayTabType) => {
                   borderBottom: `1px solid ${theme.palette.divider}`, // Divider border
                   borderRadius: "4px",
                   overflow: "hidden",
-                  backgroundColor: "transparent", // Transparent background
+                  backgroundColor: theme.palette.background.paper, // Transparent background
                   display: "flex", // Make card a flex container
                   flexDirection: "column", // Stack content vertically
                 }}
@@ -194,7 +194,7 @@ const PlayTab = ({ team }: PlayTabType) => {
                     {squad.players.length > 0 ? (
                       squad.players.map((p) => (
                         <Typography
-                          key={p.id}
+                          key={p.pt_id}
                           variant="body2"
                           sx={{ fontSize: "0.9rem", wordBreak: "break-word" }}
                         >

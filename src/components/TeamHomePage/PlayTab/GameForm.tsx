@@ -66,7 +66,7 @@ const GameForm = ({
       const { data, error } = await supabase
         .from("squads")
         .select(
-          "id, name, squad_players(player_id, active, player_teams(elo, players(name)))"
+          "id, name, squad_players(pt_id, active, player_teams(elo, players(name)))"
         )
         .eq("team_id", teamId)
         .eq("active", true)
@@ -81,7 +81,7 @@ const GameForm = ({
         name: squad.name,
         score: 0,
         players: squad.squad_players.map((sp) => ({
-          id: sp.player_id,
+          pt_id: sp.pt_id,
           name: sp.player_teams.players.name,
           elo: sp.player_teams.elo,
         })),
@@ -244,7 +244,7 @@ const GameForm = ({
                           >
                             <strong className="text-sm">{option.name}:</strong>
                             {option.players.map((p) => (
-                              <div key={p.id}>
+                              <div key={p.pt_id}>
                                 {p.elo ? `${p.name} (ELO: ${p.elo})` : p.name}
                               </div>
                             ))}
@@ -273,7 +273,7 @@ const GameForm = ({
                           >
                             <strong className="text-sm">{option.name}:</strong>
                             {option.players.map((p) => (
-                              <div key={p.id}>
+                              <div key={p.pt_id}>
                                 {p.elo ? `${p.name} (ELO: ${p.elo})` : p.name}
                               </div>
                             ))}

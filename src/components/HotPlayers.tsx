@@ -1,6 +1,7 @@
 import { NewPlayerType } from "@/lib/types";
 import WhatshotIcon from "@mui/icons-material/Whatshot"; // Import a hot icon
 import { Box, Typography, useTheme } from "@mui/material";
+import { useRouter } from "next/router";
 
 interface HotPlayersProps {
   hotPlayers: NewPlayerType[];
@@ -19,6 +20,7 @@ const getRank = (elo: number) => {
 
 const HotPlayers = ({ hotPlayers }: HotPlayersProps) => {
   const theme = useTheme();
+  const router = useRouter();
 
   if (!hotPlayers || hotPlayers.length === 0) {
     return null; // Or a message indicating no hot players
@@ -28,9 +30,8 @@ const HotPlayers = ({ hotPlayers }: HotPlayersProps) => {
     <Box
       className="w-full"
       sx={{
-        // border: `1px solid ${theme.palette.divider}`,
         borderRadius: "4px",
-        // boxShadow: theme.shadows[1],
+
         marginBottom: theme.spacing(2),
       }}
     >
@@ -39,8 +40,6 @@ const HotPlayers = ({ hotPlayers }: HotPlayersProps) => {
           display: "flex",
           alignItems: "center",
           padding: theme.spacing(1.5), // Slightly smaller padding
-          //   borderBottom: `1px solid ${theme.palette.divider}`,
-          //   backgroundColor: theme.palette.background.default,
         }}
       >
         <WhatshotIcon color="warning" sx={{ mr: 1 }} /> {/* Smaller icon */}
@@ -68,13 +67,18 @@ const HotPlayers = ({ hotPlayers }: HotPlayersProps) => {
             >
               <Box>
                 <Typography
+                  component={"button"}
                   variant="body1"
                   fontWeight="bold"
                   sx={{
                     display: "flex",
                     alignItems: "center",
                     gap: 0.5,
+                    cursor: "pointer",
                   }}
+                  onClick={() =>
+                    void router.push(`/player/${player.player_id}`)
+                  }
                 >
                   {rank.icon} {player.name}
                 </Typography>

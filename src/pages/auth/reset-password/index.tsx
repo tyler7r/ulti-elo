@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { AlertType } from "@/lib/types";
 import {
   Alert,
   Button,
@@ -13,7 +14,10 @@ const ResetPassword = () => {
   const router = useRouter();
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [alert, setAlert] = useState<AlertType>({
+    message: null,
+    severity: "error",
+  });
 
   const handleResetPassword = async (e: FormEvent) => {
     e.preventDefault();
@@ -24,25 +28,44 @@ const ResetPassword = () => {
     });
 
     if (error) {
-      setMessage(
-        `Failed to reset password: ${error.message}. Please try again.`
-      );
+      setAlert({
+        message: `Failed to reset password: ${error.message}. Please try again.`,
+        severity: "error",
+      });
     } else {
-      setMessage("Password reset successfully. Redirecting...");
-      setTimeout(() => router.push("/auth/login"), 300);
+      setAlert({
+        message: "Password reset successfully. Redirecting...",
+        severity: "success",
+      });
+      setTimeout(() => router.push("/auth/login"), 500);
     }
 
     setLoading(false);
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="shadow-md rounded-lg p-6 w-full max-w-md">
-        <Typography variant="h4" sx={{ textAlign: "center", marginBottom: 2 }}>
+    <div className="flex justify-center items-center mt-16 flex-col">
+      <Typography
+        variant="h4"
+        color="secondary"
+        fontWeight={"bold"}
+        fontStyle={"italic"}
+      >
+        Welcome to Ulti ELO
+      </Typography>
+      <div className="p-6 mt-8 w-full max-w-md flex flex-col gap-4">
+        <Typography
+          variant="h4"
+          sx={{ textAlign: "center" }}
+          fontWeight={"bold"}
+        >
           Reset Password
         </Typography>
 
-        <form onSubmit={handleResetPassword} className="space-y-4">
+        <form
+          onSubmit={handleResetPassword}
+          className="space-y-4 flex flex-col w-full items-center justify-center gap-4"
+        >
           <TextField
             fullWidth
             label="New Password"
@@ -52,13 +75,14 @@ const ResetPassword = () => {
             required
           />
 
-          {message && <Alert severity="info">{message}</Alert>}
+          {alert.message && (
+            <Alert severity={alert.severity}>{alert.message}</Alert>
+          )}
 
           <Button
             type="submit"
             variant="contained"
             color="primary"
-            fullWidth
             disabled={loading}
           >
             {loading ? <CircularProgress size={24} /> : "Reset Password"}

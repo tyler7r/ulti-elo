@@ -10,8 +10,9 @@ import Game from "./Game";
 type GameHistoryProps = {
   teamId?: string;
   squadId?: string;
-  playerId?: string;
+  playerTeamIds?: string[];
   gameId?: string;
+  playerId?: string;
 };
 
 const PAGE_SIZE = 5;
@@ -19,8 +20,9 @@ const PAGE_SIZE = 5;
 const GameHistory = ({
   teamId,
   squadId,
-  playerId,
+  playerTeamIds,
   gameId,
+  playerId,
 }: GameHistoryProps) => {
   const [games, setGames] = useState<GameHistoryType[]>([]);
   const [page, setPage] = useState(1);
@@ -36,7 +38,7 @@ const GameHistory = ({
         const newGames = await getGameHistory({
           teamId,
           squadId,
-          playerId,
+          playerTeamIds,
           gameId,
           page: newPage,
           limit: PAGE_SIZE,
@@ -59,7 +61,7 @@ const GameHistory = ({
         setLoading(false);
       }
     },
-    [teamId, squadId, playerId, gameId]
+    [teamId, squadId, playerTeamIds, gameId]
   );
 
   // ✅ Initial data fetch with a flag to prevent multiple triggers during development
@@ -72,12 +74,14 @@ const GameHistory = ({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  if (loading && games.length === 0) return <p>Loading...</p>;
-  if (games.length === 0) return <p>No games found.</p>;
+  if (loading && games.length === 0)
+    return <p className="font-bold text-lg p-4">Loading...</p>;
+  if (games.length === 0)
+    return <p className="font-bold text-lg p-4">No games found.</p>;
 
   return (
     <div className="p-4 w-full flex flex-col">
-      <Typography variant="h5" fontWeight={"bold"}>
+      <Typography variant="h5" fontWeight={"bold"} marginBottom={2}>
         Game History
       </Typography>
 
@@ -102,7 +106,7 @@ const GameHistory = ({
       >
         <div className="grid gap-4">
           {games.map((game) => (
-            <Game key={game.id} game={game} />
+            <Game key={game.id} game={game} playerId={playerId} />
           ))}
         </div>
       </InfiniteScroll>

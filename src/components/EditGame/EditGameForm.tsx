@@ -47,8 +47,8 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
   );
   const [gameWeight, setGameWeight] = useState<string>("standard");
   const [overlappingPlayers, setOverlappingPlayers] = useState<Player[]>([]);
-  const squadAIDs = squadAPlayers.map((p) => p.id);
-  const squadBIDs = squadBPlayers.map((p) => p.id);
+  const squadAIDs = squadAPlayers.map((p) => p.pt_id);
+  const squadBIDs = squadBPlayers.map((p) => p.pt_id);
   const [allTeamPlayers, setAllTeamPlayers] = useState<GamePlayerWithPlayer[]>(
     []
   );
@@ -87,7 +87,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
           // Fetch all players for the team
           const { data: playerTeams, error: playersError } = await supabase
             .from("player_teams")
-            .select("id, elo, players(id, name)")
+            .select("pt_id, elo, players(id, name)")
             .eq("team_id", gameTeam.team_id);
 
           if (playersError || !playerTeams) {
@@ -102,7 +102,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
           setAllTeamPlayers(
             playerTeams.map((pt) => ({
               player_id: pt.players.id,
-              id: pt.id,
+              pt_id: pt.pt_id,
               name: pt.players.name,
               elo: pt.elo,
             }))
@@ -192,11 +192,11 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
           squadAScore: Number(squadAScore),
           squadBScore: Number(squadBScore),
           squadAPlayers: squadAPlayers.map((p) => ({
-            id: p.id,
+            pt_id: p.pt_id,
             player_id: p.player_id,
           })),
           squadBPlayers: squadBPlayers.map((p) => ({
-            id: p.id,
+            pt_id: p.pt_id,
             player_id: p.player_id,
           })),
           teamId: gameDetails.game.team_id,
@@ -282,34 +282,34 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
     }
   };
 
-  const addPlayerToSquad = (squad: string, playerId: string) => {
-    const playerFind = allTeamPlayers.find((p) => p.id === playerId);
+  const addPlayerToSquad = (squad: string, ptId: string) => {
+    const playerFind = allTeamPlayers.find((p) => p.pt_id === ptId);
     if (playerFind) {
-      if (squad === gameDetails?.squadA.id && !squadAIDs.includes(playerId)) {
+      if (squad === gameDetails?.squadA.id && !squadAIDs.includes(ptId)) {
         setSquadAPlayers([...squadAPlayers, playerFind]);
       } else if (
         squad === gameDetails?.squadB.id &&
-        !squadBIDs.includes(playerId)
+        !squadBIDs.includes(ptId)
       ) {
         setSquadBPlayers([...squadBPlayers, playerFind]);
       }
     }
   };
 
-  const removePlayerFromSquad = (squad: string, playerId: string) => {
+  const removePlayerFromSquad = (squad: string, ptId: string) => {
     if (squad === gameDetails?.squadA.id) {
-      setSquadAPlayers(squadAPlayers.filter((p) => p.id !== playerId));
+      setSquadAPlayers(squadAPlayers.filter((p) => p.pt_id !== ptId));
     } else if (squad === gameDetails?.squadB.id) {
-      setSquadBPlayers(squadBPlayers.filter((p) => p.id !== playerId));
+      setSquadBPlayers(squadBPlayers.filter((p) => p.pt_id !== ptId));
     }
   };
 
   useEffect(() => {
     const initialSquadAIDs = JSON.stringify(
-      gameDetails?.squadA.players.map((p) => p.id)
+      gameDetails?.squadA.players.map((p) => p.pt_id)
     );
     const initialSquadBIDs = JSON.stringify(
-      gameDetails?.squadB.players.map((p) => p.id)
+      gameDetails?.squadB.players.map((p) => p.pt_id)
     );
     const newSquadAIDs = JSON.stringify(squadAIDs);
     const newSquadBIDs = JSON.stringify(squadBIDs);

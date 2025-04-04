@@ -10,6 +10,7 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
+import { useRouter } from "next/router";
 import { GamePlayersType } from "./GamePlayersContainer";
 
 type GamePlayersProps = {
@@ -31,6 +32,7 @@ const GamePlayers = ({
   const headerBackgroundColor = isDarkMode ? "grey.700" : "grey.300";
   const rowBackgroundColor = isDarkMode ? "grey.900" : "grey.100";
   const rowHoverBackgroundColor = isDarkMode ? "grey.800" : "grey.200";
+  const router = useRouter();
 
   if (players.length === 0) {
     return (
@@ -39,6 +41,10 @@ const GamePlayers = ({
       </Typography>
     );
   }
+
+  const handlePlayerClick = (playerId: string) => {
+    void router.push(`/player/${playerId}`);
+  };
 
   return (
     <div className="mt-4 w-full">
@@ -102,7 +108,7 @@ const GamePlayers = ({
 
                   return (
                     <TableRow
-                      key={player.id}
+                      key={player.pt_id}
                       sx={{
                         backgroundColor: rowBackgroundColor,
                         "&:last-child td, &:last-child th": { border: 0 },
@@ -114,6 +120,7 @@ const GamePlayers = ({
                         scope="row"
                         align="left"
                         sx={{ cursor: "pointer", padding: 1 }}
+                        onClick={() => handlePlayerClick(player.player_id)}
                       >
                         {player.name}
                       </TableCell>

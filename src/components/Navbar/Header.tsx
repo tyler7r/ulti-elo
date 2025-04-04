@@ -18,6 +18,7 @@ import LoginFirstWarning from "../Utils/LoginFirstWarning";
 import CreatePlayer from "./CreatePlayer";
 import CreateTeam from "./CreateTeam";
 import InfoModal from "./InfoModal";
+import TeamModal from "./TeamsModal";
 
 type HeaderProps = {
   toggleTheme: () => void;
@@ -138,6 +139,7 @@ const Header = ({ toggleTheme, isDarkMode }: HeaderProps) => {
           </div>
         </Toolbar>
       </AppBar>
+      <TeamModal setOpenLogin={setOpenLogin} />
       <CreatePlayer onClose={closeModal} openPlayerModal={openPlayerModal} />
       <CreateTeam onClose={closeModal} openTeamModal={openTeamModal} />
       <LoginFirstWarning

@@ -1,7 +1,9 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { AlertType } from "@/lib/types";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import {
+  Alert,
   Button,
   CircularProgress,
   IconButton,
@@ -22,19 +24,21 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [alert, setAlert] = useState<AlertType>({
+    message: null,
+    severity: "error",
+  });
 
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setAlert({ message: "Passwords do not match.", severity: "error" });
       return;
     }
 
     setLoading(true);
-    setError(null);
+    setAlert({ message: null, severity: "error" });
 
     // 1️⃣ Sign up the user with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
@@ -44,7 +48,7 @@ const Signup = () => {
 
     if (error) {
       console.error("Signup error:", error.message);
-      setError(error.message);
+      setAlert({ message: error.message, severity: "error" });
       setLoading(false);
       return;
     }
@@ -62,11 +66,20 @@ const Signup = () => {
 
       if (dbError) {
         console.error("Error inserting into users:", dbError.message);
-        setError("Failed to create user profile.");
+        setAlert({
+          message: "Failed to create user profile.",
+          severity: "error",
+        });
       } else {
-        setSuccess("User created successfully, check email to confirm signup!");
+        setAlert({
+          message: "User created successfully, check email to confirm signup!",
+          severity: "success",
+        });
         refreshUser();
-        router.push("/"); // Redirect to homepage after signup
+        setTimeout(() => {
+          void router.push("/");
+        }, 1000);
+        // Redirect to homepage after signup
       }
     }
 
@@ -74,8 +87,16 @@ const Signup = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen">
-      <div className="shadow-md dark:shadow-md rounded-lg p-6 w-full max-w-md">
+    <div className="flex justify-center items-center mt-16 flex-col w-full">
+      <Typography
+        variant="h4"
+        color="secondary"
+        fontWeight={"bold"}
+        fontStyle={"italic"}
+      >
+        Welcome to Ulti ELO
+      </Typography>
+      <div className="rounded-lg p-6 w-full max-w-md mt-8">
         <Typography
           variant="h4"
           fontWeight={"bold"}
@@ -166,23 +187,8 @@ const Signup = () => {
             }}
           />
 
-          {error && (
-            <Typography
-              color="error"
-              variant="overline"
-              sx={{ fontWeight: "bold" }}
-            >
-              {error}
-            </Typography>
-          )}
-          {success && (
-            <Typography
-              color="success"
-              variant="overline"
-              sx={{ fontWeight: "bold" }}
-            >
-              {success}
-            </Typography>
+          {alert.message && (
+            <Alert severity={alert.severity}>{alert.message}</Alert>
           )}
 
           {/* Submit Button */}

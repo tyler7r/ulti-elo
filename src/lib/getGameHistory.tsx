@@ -4,7 +4,7 @@ import { GameHistoryType } from "./types";
 type FilterParam = {
   teamId?: string;
   squadId?: string;
-  playerId?: string;
+  playerTeamIds?: string[];
   gameId?: string;
   page?: number;
   limit?: number;
@@ -13,7 +13,7 @@ type FilterParam = {
 export const getGameHistory = async ({
   teamId,
   squadId,
-  playerId,
+  playerTeamIds,
   gameId,
   page = 1,
   limit = 5,
@@ -33,8 +33,9 @@ export const getGameHistory = async ({
       game_weight,
       squadA: squads!games_squad_a_id_fkey(*), 
       squadB: squads!games_squad_b_id_fkey(*),
-      game_players (
-        player_id,
+      team: teams!inner(*),
+      game_players!inner(
+        pt_id,
         squad_id,
         elo_before,
         elo_after,
@@ -50,7 +51,8 @@ export const getGameHistory = async ({
   if (teamId) query = query.eq("team_id", teamId);
   if (squadId)
     query = query.or(`squad_a_id.eq.${squadId},squad_b_id.eq.${squadId}`);
-  if (playerId) query = query.eq("game_players.player_id", playerId);
+  if (playerTeamIds && playerTeamIds.length > 0)
+    query = query.in("game_players.pt_id", playerTeamIds);
   if (gameId) query = query.eq("id", gameId);
 
   const { data, error } = await query;
@@ -70,6 +72,11 @@ export const getGameHistory = async ({
     squad_a_id: game.squad_a_id,
     squad_b_id: game.squad_b_id,
     game_weight: game.game_weight,
+    team: {
+      id: game.team_id,
+      name: game.team.name,
+      logo_url: game.team.logo_url,
+    },
     squadA: {
       info: {
         id: game.squad_a_id,
@@ -80,8 +87,8 @@ export const getGameHistory = async ({
       players: game.game_players
         .filter((gp) => gp.squad_id === game.squad_a_id)
         .map((gp) => ({
-          id: gp.player_teams.id,
-          player_id: gp.player_id,
+          player_id: gp.player_teams.player_id,
+          pt_id: gp.pt_id,
           name: gp.player_teams.players.name,
           elo: gp.player_teams.elo,
           elo_after: gp.elo_after,
@@ -107,8 +114,8 @@ export const getGameHistory = async ({
       players: game.game_players
         .filter((gp) => gp.squad_id === game.squad_b_id)
         .map((gp) => ({
-          id: gp.player_teams.id,
-          player_id: gp.player_id,
+          player_id: gp.player_teams.player_id,
+          pt_id: gp.pt_id,
           name: gp.player_teams.players.name,
           elo: gp.player_teams.elo,
           elo_after: gp.elo_after,

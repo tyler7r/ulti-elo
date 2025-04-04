@@ -43,14 +43,14 @@ const EditOverlappingPlayers = ({
 
   const handleRemoveOverlap = async (player: Player, squadId: string) => {
     if (squadA && squadA.id === squadId) {
-      setSquadAPlayers(squadAPlayers.filter((p) => p.id !== player.id));
+      setSquadAPlayers(squadAPlayers.filter((p) => p.pt_id !== player.pt_id));
       setAlert({
         message: `${player.name} was removed from ${squadA.name}`,
         severity: "success",
       });
     }
     if (squadB && squadB.id === squadId) {
-      setSquadBPlayers(squadBPlayers.filter((p) => p.id !== player.id));
+      setSquadBPlayers(squadBPlayers.filter((p) => p.pt_id !== player.pt_id));
       setAlert({
         message: `${player.name} was removed from ${squadA.name}`,
         severity: "success",
@@ -131,7 +131,7 @@ const EditOverlappingPlayers = ({
           <TableBody>
             {overlappingPlayers.map((player) => (
               <TableRow
-                key={player.id}
+                key={player.pt_id}
                 sx={{
                   backgroundColor: rowBackgroundColor,
                   "&:last-child td, &:last-child th": { border: 0 },

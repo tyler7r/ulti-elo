@@ -5,9 +5,11 @@ export const getOverlappingPlayers = (
   squadB: GameFormSquadType | null
 ): Player[] => {
   if (!squadA || !squadB) return [];
-  const squadBPlayers = squadB.players.map((p) => p.id);
+  const squadBPlayers = squadB.players.map((p) => p.pt_id);
 
-  return squadA.players.filter((player) => squadBPlayers.includes(player.id));
+  return squadA.players.filter((player) =>
+    squadBPlayers.includes(player.pt_id)
+  );
 };
 
 export const getEditOverlappingPlayers = (
@@ -15,6 +17,6 @@ export const getEditOverlappingPlayers = (
   squadB: GamePlayerWithPlayer[]
 ) => {
   if (!squadA || !squadB) return [];
-  const squadBPlayers = squadB.map((p) => p.id);
-  return squadA.filter((player) => squadBPlayers.includes(player.id));
+  const squadBPlayers = squadB.map((p) => p.pt_id);
+  return squadA.filter((player) => squadBPlayers.includes(player.pt_id));
 };

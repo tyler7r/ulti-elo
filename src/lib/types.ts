@@ -17,7 +17,7 @@ export type GamePlayerType = {
   elo_before: number;
   game_id: string;
   is_winner: boolean;
-  player_id: string;
+  pt_id: string;
   squad_id: string;
   mu_before: number;
   sigma_before: number;
@@ -44,20 +44,10 @@ export type GamePlayerType = {
 export type PlayerType = {
   id: string;
   name: string;
-  win_streak: number;
-  loss_streak: number;
-  wins: number;
-  losses: number;
-  elo: number;
-  elo_change: number;
-  mu: number;
-  sigma: number;
-  win_percent: number;
-  highest_elo: number;
-  longest_win_streak: number;
 };
 
 export type NewPlayerType = {
+  pt_id: string;
   player_id: string;
   team_id: string;
   name: string;
@@ -72,10 +62,12 @@ export type NewPlayerType = {
   win_percent: number;
   highest_elo: number;
   longest_win_streak: number;
+  last_updated: string;
+  teams?: TeamType;
 };
 
 export type PlayerRating = {
-  player_id: string;
+  pt_id: string;
   mu: number;
   sigma: number;
   elo: number;
@@ -89,17 +81,8 @@ export type PlayerRating = {
   win_percent: number;
 };
 
-export type PlayerStatsType = {
-  newWinStreak: number;
-  newLossStreak: number;
-  wins: number;
-  losses: number;
-  newWinPercent: number;
-  newLongestStreak: number;
-};
-
 export type PlayerTeamType = {
-  id: string;
+  pt_id: string;
   player_id: string;
   team_id: string;
   elo: number;
@@ -113,6 +96,7 @@ export type PlayerTeamType = {
   loss_streak: number;
   longest_win_streak: number;
   highest_elo: number;
+  last_updated: string;
   player: {
     name: string;
   };
@@ -124,27 +108,9 @@ export type TeamType = {
   logo_url: string | null;
 };
 
-export type PlayerSelectType = {
-  id: string;
-  players: PlayerType;
-};
-
-export type PlayerEloType = {
-  id: string;
-  name: string;
-  elo: number;
-};
-
-export type SquadPlayersType = {
-  squads: {
-    id: string;
-    name: string;
-    active: boolean;
-  };
-  players: {
-    id: string;
-    name: string;
-  };
+export type PlayerTeamsType = {
+  player: PlayerTeamType;
+  team: TeamType;
 };
 
 export type GameFormSquadType = {
@@ -162,7 +128,7 @@ export type SquadType = {
 };
 
 export type PlayerHistoryType = {
-  id: string;
+  pt_id: string;
   player_id: string;
   name: string;
   elo: number;
@@ -188,6 +154,7 @@ export type GameHistoryType = {
   squad_a_id: string;
   squad_b_id: string;
   game_weight: string;
+  team: TeamType;
   squadA: {
     info: SquadType;
     players: PlayerHistoryType[];
@@ -205,7 +172,7 @@ export type AlertType = {
 
 // Types for Retroactive Editing
 export interface Player {
-  id: string;
+  pt_id: string;
   name: string;
   elo?: number;
 }
@@ -233,12 +200,6 @@ export interface Game {
   squad_b_score: number;
   game_weight: string;
 }
-
-// export interface GameDetails {
-//   game: Game;
-//   squadA: Squad & { players: SquadPlayerWithPlayer[] };
-//   squadB: Squad & { players: SquadPlayerWithPlayer[] };
-// }
 
 export interface GameDetails {
   game: Game;

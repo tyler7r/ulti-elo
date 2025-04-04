@@ -55,12 +55,12 @@ const EditGamePlayers = ({
   }
 
   const availablePlayers = allPlayers.filter(
-    (player) => !squadPlayerIDs.includes(player.id)
+    (player) => !squadPlayerIDs.includes(player.pt_id)
   );
 
   const handleAddPlayer = (player: GamePlayerWithPlayer | null) => {
     if (player) {
-      addPlayerToSquad(squad.id, player.id);
+      addPlayerToSquad(squad.id, player.pt_id);
       setSelectedValue(null); // Clear the selected value after adding
       setInputValue(""); // Clear the input value as well
     }
@@ -128,7 +128,7 @@ const EditGamePlayers = ({
 
                 return (
                   <TableRow
-                    key={player.id}
+                    key={player.pt_id}
                     sx={{
                       backgroundColor: rowBackgroundColor,
                       "&:last-child td, &:last-child th": { border: 0 },
@@ -153,7 +153,7 @@ const EditGamePlayers = ({
                         edge="end"
                         aria-label="delete"
                         onClick={() =>
-                          removePlayerFromSquad(squad.id, player.id)
+                          removePlayerFromSquad(squad.id, player.pt_id)
                         }
                         size="small"
                       >

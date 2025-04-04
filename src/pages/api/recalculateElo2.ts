@@ -98,16 +98,16 @@ export async function recalculateElo2(
         .select("*")
         .eq("game_id", editedGameId);
       const currentPlayersInEditedGame =
-        currentGamePlayersForEditedGame.data?.map((gp) => gp.player_id) || [];
+        currentGamePlayersForEditedGame.data?.map((gp) => gp.pt_id) || [];
       const originalPlayers =
-        gameEdit?.previous_game_players_data?.map((gp) => gp.player_id) || [];
+        gameEdit?.previous_game_players_data?.map((gp) => gp.pt_id) || [];
       const removedPlayers = originalPlayers.filter(
         (playerId) => !currentPlayersInEditedGame.includes(playerId)
       );
 
       for (const removedPlayerId of removedPlayers) {
         const beforeData = gameEdit?.previous_game_players_data?.find(
-          (gp) => gp.player_id === removedPlayerId
+          (gp) => gp.pt_id === removedPlayerId
         );
         if (beforeData) {
           const { error: updatePlayerError } = await supabase
@@ -125,7 +125,7 @@ export async function recalculateElo2(
               longest_win_streak: beforeData.longest_win_streak_before,
               elo_change: beforeData.elo_change_before,
             })
-            .eq("id", removedPlayerId);
+            .eq("pt_id", removedPlayerId);
           if (updatePlayerError) {
             console.error("Error reverting player stats:", updatePlayerError);
           }
@@ -136,7 +136,7 @@ export async function recalculateElo2(
       const previousGamePlayersData =
         gameEdit?.previous_game_players_data || [];
       previousGamePlayersData.forEach((playerData) => {
-        playerStatsBeforeRecalculation.set(playerData.player_id, {
+        playerStatsBeforeRecalculation.set(playerData.pt_id, {
           mu: playerData.mu_before,
           sigma: playerData.sigma_before,
           elo: playerData.elo_before,
@@ -169,7 +169,7 @@ export async function recalculateElo2(
       }
 
       previousGamePlayers.forEach((playerData) => {
-        playerStatsBeforeRecalculation.set(playerData.player_id, {
+        playerStatsBeforeRecalculation.set(playerData.pt_id, {
           mu: playerData.mu_before,
           sigma: playerData.sigma_before,
           elo: playerData.elo_before,
@@ -200,10 +200,10 @@ export async function recalculateElo2(
             win_percent: gp.win_percent_before,
             longest_win_streak: gp.longest_win_streak_before,
           })
-          .eq("id", gp.player_id); // gp.player_id now references player_teams.id
+          .eq("pt_id", gp.pt_id); // gp.player_id now references player_teams.id
         if (updatePlayerTeamsError) {
           console.error(
-            `Error updating player_teams for ID ${gp.player_id}:`,
+            `Error updating player_teams for ID ${gp.pt_id}:`,
             updatePlayerTeamsError
           );
           throw new Error("Failed to restore player stats");
@@ -237,12 +237,10 @@ export async function recalculateElo2(
         await supabase
           .from("game_players")
           .select(`*, games!inner(*)`)
-          .eq("player_id", playerId)
+          .eq("pt_id", playerId)
           .gt("games.match_date", editedGame.match_date)
           .order("games(match_date)")
           .limit(1);
-
-      console.log({ subsequentGamePlayer });
       // Set current player stats?
 
       if (fetchSubsequentGameError) {
@@ -270,7 +268,7 @@ export async function recalculateElo2(
           await supabase
             .from("player_teams")
             .select("*")
-            .eq("id", playerId)
+            .eq("pt_id", playerId)
             .single();
         if (fetchCurrentPlayerError) {
           console.error(
@@ -396,7 +394,7 @@ export async function recalculateElo2(
 
       const playersUpdates: {
         player_id: string;
-        id: string;
+        pt_id: string;
         team_id: string;
         mu: number;
         sigma: number;
@@ -411,7 +409,7 @@ export async function recalculateElo2(
         longest_win_streak: number;
       }[] = [];
       const gamePlayersUpdates: {
-        player_id: string;
+        pt_id: string;
         game_id: string;
         squad_id: string;
         is_winner: boolean;
@@ -457,14 +455,12 @@ export async function recalculateElo2(
       const team1Players =
         (await Promise.all(
           squadAGamePlayers?.map(async (sp) => {
-            const playerHasCurrentStats = processingPlayerStats.get(
-              sp.player_id
-            );
+            const playerHasCurrentStats = processingPlayerStats.get(sp.pt_id);
 
             if (playerHasCurrentStats) {
               return {
                 player_id: sp.player_teams.players.id,
-                team_player_id: sp.player_id,
+                pt_id: sp.pt_id,
                 name: sp.player_teams.players.name,
                 squad_id: sp.squad_id,
                 ...playerHasCurrentStats,
@@ -472,12 +468,12 @@ export async function recalculateElo2(
             } else {
               // Player was likely added retroactively, check for subsequent games
               const addedPlayerStats = await getAddedPlayerStatsBeforeGame(
-                sp.player_id
+                sp.pt_id
               );
-              processingPlayerStats.set(sp.player_id, addedPlayerStats);
+              processingPlayerStats.set(sp.pt_id, addedPlayerStats);
               return {
                 player_id: sp.player_teams.players.id,
-                team_player_id: sp.player_id,
+                pt_id: sp.pt_id,
                 name: sp.player_teams.players.name,
                 squad_id: sp.squad_id,
                 ...addedPlayerStats,
@@ -489,26 +485,24 @@ export async function recalculateElo2(
       const team2Players =
         (await Promise.all(
           squadBGamePlayers?.map(async (sp) => {
-            const playerHasCurrentStats = processingPlayerStats.get(
-              sp.player_id
-            );
+            const playerHasCurrentStats = processingPlayerStats.get(sp.pt_id);
 
             if (playerHasCurrentStats) {
               return {
                 player_id: sp.player_teams.players.id,
-                team_player_id: sp.player_id,
+                pt_id: sp.pt_id,
                 name: sp.player_teams.players.name,
                 squad_id: sp.squad_id,
                 ...playerHasCurrentStats,
               };
             } else {
               const addedPlayerStats = await getAddedPlayerStatsBeforeGame(
-                sp.player_id
+                sp.pt_id
               );
-              processingPlayerStats.set(sp.player_id, addedPlayerStats);
+              processingPlayerStats.set(sp.pt_id, addedPlayerStats);
               return {
                 player_id: sp.player_teams.players.id,
-                team_player_id: sp.player_id,
+                pt_id: sp.pt_id,
                 name: sp.player_teams.players.name,
                 squad_id: sp.squad_id,
                 ...addedPlayerStats,
@@ -523,17 +517,15 @@ export async function recalculateElo2(
       const augmentedTeamA: Rating[] = team1Players.map(
         (p) =>
           new Rating(
-            getPlayerStatsBeforeGame(game.id, p.team_player_id)?.mu ?? p.mu,
-            getPlayerStatsBeforeGame(game.id, p.team_player_id)?.sigma ??
-              p.sigma
+            getPlayerStatsBeforeGame(game.id, p.pt_id)?.mu ?? p.mu,
+            getPlayerStatsBeforeGame(game.id, p.pt_id)?.sigma ?? p.sigma
           )
       );
       const augmentedTeamB: Rating[] = team2Players.map(
         (p) =>
           new Rating(
-            getPlayerStatsBeforeGame(game.id, p.team_player_id)?.mu ?? p.mu,
-            getPlayerStatsBeforeGame(game.id, p.team_player_id)?.sigma ??
-              p.sigma
+            getPlayerStatsBeforeGame(game.id, p.pt_id)?.mu ?? p.mu,
+            getPlayerStatsBeforeGame(game.id, p.pt_id)?.sigma ?? p.sigma
           )
       );
 
@@ -606,7 +598,7 @@ export async function recalculateElo2(
               team1Players[index].highest_elo
             );
             const newPlayerStats = updatePlayerStats(
-              team1Players[index].team_player_id,
+              team1Players[index].pt_id,
               newMu,
               newSigma,
               newElo,
@@ -620,7 +612,7 @@ export async function recalculateElo2(
               isWinner
             );
             playersUpdates.push({
-              id: team1Players[index].team_player_id,
+              pt_id: team1Players[index].pt_id,
               player_id: team1Players[index].player_id,
               team_id: teamId,
               mu: newMu,
@@ -636,7 +628,7 @@ export async function recalculateElo2(
               win_percent: newPlayerStats.winPercent,
             });
             gamePlayersUpdates.push({
-              player_id: team1Players[index].team_player_id,
+              pt_id: team1Players[index].pt_id,
               game_id: game.id,
               squad_id: team1Players[index].squad_id,
               is_winner: isWinner,
@@ -685,7 +677,7 @@ export async function recalculateElo2(
               team2Players[index].highest_elo
             );
             const newPlayerStats = updatePlayerStats(
-              team2Players[index].team_player_id,
+              team2Players[index].pt_id,
               newMu,
               newSigma,
               newElo,
@@ -699,7 +691,7 @@ export async function recalculateElo2(
               isWinner
             );
             playersUpdates.push({
-              id: team2Players[index].team_player_id,
+              pt_id: team2Players[index].pt_id,
               player_id: team2Players[index].player_id,
               team_id: teamId,
               mu: newMu,
@@ -715,7 +707,7 @@ export async function recalculateElo2(
               win_percent: newPlayerStats.winPercent,
             });
             gamePlayersUpdates.push({
-              player_id: team2Players[index].team_player_id,
+              pt_id: team2Players[index].pt_id,
               game_id: game.id,
               squad_id: team2Players[index].squad_id,
               is_winner: isWinner,
@@ -756,11 +748,10 @@ export async function recalculateElo2(
           .upsert(gamePlayersUpdates);
         if (gamePlayersBatchError)
           console.error("Batch Game Players Update Error");
-        console.log(gamePlayersBatchError);
       }
       // Update processingPlayerStats for the next game
       gamePlayersUpdates.forEach((gpu) => {
-        processingPlayerStats.set(gpu.player_id, {
+        processingPlayerStats.set(gpu.pt_id, {
           mu: gpu.mu_after,
           sigma: gpu.sigma_after,
           elo: gpu.elo_after,
