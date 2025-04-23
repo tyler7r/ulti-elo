@@ -160,6 +160,9 @@ export type GameHistoryType = {
   squad_b_id: string;
   game_weight: string;
   session_id: string;
+  session: {
+    title: string;
+  };
   team: TeamType;
   squadA: {
     info: SquadType;
@@ -266,14 +269,7 @@ export type SessionAttendeeWithStats = {
   created_at: string;
   updated_at: string;
 
-  // Stats Before Session Start
-  elo_before: number | null;
-  mu_before: number | null;
-  sigma_before: number | null;
-  wins_before: number | null;
-  losses_before: number | null;
-  rank_before: number | null;
-
+  rank_before: number;
   // Include joined player details (current info) for display
   player_teams: PlayerTeamType;
 };

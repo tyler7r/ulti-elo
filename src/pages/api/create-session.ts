@@ -19,11 +19,6 @@ interface SquadPlayerInsert {
 
 type AttendeeStatsSnapshot = {
   pt_id: string;
-  elo: number;
-  mu: number;
-  sigma: number;
-  wins: number;
-  losses: number;
   rank: number;
 };
 
@@ -104,6 +99,7 @@ export const saveNewSession = async (
       .from("player_teams")
       .select("pt_id, elo")
       .eq("team_id", teamId)
+      .or("wins.gt.0, losses.gt.0")
       .order("elo", { ascending: false });
 
     if (rankError)
@@ -120,11 +116,6 @@ export const saveNewSession = async (
     const attendeeStatsSnapshots: AttendeeStatsSnapshot[] =
       attendeeStatsData.map((stats) => ({
         pt_id: stats.pt_id,
-        elo: stats.elo,
-        mu: stats.mu,
-        sigma: stats.sigma,
-        wins: stats.wins,
-        losses: stats.losses,
         rank: rankMap.get(stats.pt_id) ?? 1,
       }));
 
@@ -132,11 +123,6 @@ export const saveNewSession = async (
     const attendeeInserts = attendeeStatsSnapshots.map((attendee) => ({
       session_id: sessionId!,
       pt_id: attendee.pt_id,
-      elo_before: attendee.elo,
-      mu_before: attendee.mu,
-      sigma_before: attendee.sigma,
-      wins_before: attendee.wins,
-      losses_before: attendee.losses,
       rank_before: attendee.rank,
     }));
     const { error: attendeeError } = await supabase

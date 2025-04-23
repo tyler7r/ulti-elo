@@ -5,6 +5,7 @@ import {
   KeyboardDoubleArrowDown,
   KeyboardDoubleArrowUp,
 } from "@mui/icons-material";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import LockIcon from "@mui/icons-material/Lock";
 import {
   Alert,
@@ -31,7 +32,7 @@ type GameProps = {
 const Game = ({ game, playerId }: GameProps) => {
   const { userRoles } = useAuth();
   const [expanded, setExpanded] = useState(false);
-  const dateFormatted = new Date(game.match_date).toLocaleDateString();
+  // const dateFormatted = new Date(game.match_date).toLocaleDateString();
   const [editing, setEditing] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -39,6 +40,7 @@ const Game = ({ game, playerId }: GameProps) => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const router = useRouter();
+  const sessionId = router.query.sessionId;
 
   const threeDaysInMilliseconds = 3 * 24 * 60 * 60 * 1000;
   const gameDate = new Date(game.match_date);
@@ -75,6 +77,13 @@ const Game = ({ game, playerId }: GameProps) => {
     if (teamId) router.reload();
     else if (game.team_id) {
       router.push(`/team/${game.team_id}`);
+    }
+  };
+
+  const handleSessionClick = (sId: string) => {
+    if (sessionId) router.reload();
+    else {
+      void router.push(`/team/${game.team_id}/sessions/${sId}`);
     }
   };
 
@@ -134,7 +143,24 @@ const Game = ({ game, playerId }: GameProps) => {
               </Typography>
             </div>
           </Box>
-          <p className="text-sm italic">{dateFormatted}</p>
+          <Box
+            display={"flex"}
+            alignItems={"center"}
+            sx={{ cursor: "pointer" }}
+            onClick={() => handleSessionClick(game.session_id)}
+            mt={0.5}
+          >
+            <ArrowForwardIcon color="secondary" fontSize="small" />
+            <Typography
+              variant="subtitle2"
+              fontStyle={"italic"}
+              component={"div"}
+              sx={{ cursor: "pointer" }}
+              color="textSecondary"
+            >
+              {game.session.title}
+            </Typography>
+          </Box>
         </div>
         <div className="flex gap-4 justify-center items-center">
           <div className="cursor-pointer mb-2" onClick={handleTeamLogoClick}>
@@ -154,9 +180,21 @@ const Game = ({ game, playerId }: GameProps) => {
             )}
           </div>
           <div className="flex flex-col items-center">
-            <p className="font-bold text-nowrap">
-              {game.squad_a_score} - {game.squad_b_score}
-            </p>
+            <div className="flex items-center gap-1">
+              <Box
+                height={10}
+                width={10}
+                sx={{ backgroundColor: theme.palette.primary.main }}
+              />
+              <div className="font-bold text-nowrap">
+                {game.squad_a_score} - {game.squad_b_score}
+              </div>
+              <Box
+                height={10}
+                width={10}
+                sx={{ backgroundColor: theme.palette.secondary.main }}
+              />
+            </div>
             {game.game_weight && (
               <Typography
                 variant="caption"

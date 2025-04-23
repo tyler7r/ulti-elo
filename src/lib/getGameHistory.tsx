@@ -38,6 +38,7 @@ export const getGameHistory = async ({
       squad_b_score,
       game_weight,
       session_id,
+      session: sessions!games_session_id_fkey(title),
       squadA: squads!games_squad_a_id_fkey(*), 
       squadB: squads!games_squad_b_id_fkey(*),
       team: teams!inner(*),
@@ -81,6 +82,9 @@ export const getGameHistory = async ({
     squad_b_id: game.squad_b_id,
     game_weight: game.game_weight,
     session_id: game.session_id,
+    session: {
+      title: game.session.title,
+    },
     team: {
       id: game.team_id,
       name: game.team.name,

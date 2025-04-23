@@ -1,9 +1,9 @@
-import CompletedGamesList from "@/components/TeamHomePage/SessionsTab/Sessions/SessionUI/CompletedGamesList";
+import GameHistory from "@/components/GameHistory/GameHistory";
 import GameScheduleManager from "@/components/TeamHomePage/SessionsTab/Sessions/SessionUI/GameScheduleManager";
 import SessionAttendeesList from "@/components/TeamHomePage/SessionsTab/Sessions/SessionUI/SessionAttendeesList";
 import SessionDetailsDisplay from "@/components/TeamHomePage/SessionsTab/Sessions/SessionUI/SessionDetailsDisplay";
-import SessionReviewDisplay from "@/components/TeamHomePage/SessionsTab/Sessions/SessionUI/SessionReview";
 import SessionSquadsDisplay from "@/components/TeamHomePage/SessionsTab/Sessions/SessionUI/SessionSquadsDisplay";
+import SessionStats from "@/components/TeamHomePage/SessionsTab/Sessions/SessionUI/SessionStats";
 import { useAuth } from "@/contexts/AuthContext";
 import { getGameHistory } from "@/lib/getGameHistory";
 import { supabase } from "@/lib/supabase";
@@ -358,10 +358,11 @@ const SessionPage = () => {
             />
           )}
           {activeTab === 1 && ( // Stats (Live)
-            <SessionReviewDisplay
+            <SessionStats
               attendeesWithStats={attendees}
               teamId={teamId}
               isActive={isActive}
+              sessionId={sessionId}
             />
           )}
         </>
@@ -371,18 +372,15 @@ const SessionPage = () => {
       {!isActive && (
         <>
           {activeTab === 0 && ( // Stats (Final)
-            <SessionReviewDisplay
+            <SessionStats
               attendeesWithStats={attendees}
               teamId={teamId}
               isActive={isActive}
+              sessionId={sessionId}
             />
           )}
           {activeTab === 1 && ( // Games
-            <CompletedGamesList
-              games={completedGames}
-              // Pass isAdmin if needed for edit functionality within CompletedGamesList
-              // isAdmin={isAdmin}
-            />
+            <GameHistory sessionId={sessionId} />
           )}
           {activeTab === 2 && ( // Squads (Read-Only)
             <SessionSquadsDisplay
