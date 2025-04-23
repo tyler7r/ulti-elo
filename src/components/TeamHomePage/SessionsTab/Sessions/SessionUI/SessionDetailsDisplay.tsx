@@ -76,7 +76,7 @@ const SessionDetailsDisplay = ({
   }, [session]);
 
   const handleTeamClick = (teamId: string) => {
-    void router.push(`/team/${teamId}`);
+    void router.push(`/team/${teamId}?tab=sessions`);
   };
 
   const handleMarkComplete = async () => {
