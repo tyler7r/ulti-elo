@@ -44,15 +44,20 @@ const GameHistory = ({
           limit: PAGE_SIZE,
         });
 
-        if (newGames.length === 0) {
-          setHasMore(false);
-        } else {
-          setGames((prev) =>
-            newPage === 1 ? newGames : [...prev, ...newGames]
-          );
-          setPage(newPage + 1);
-          if (newGames.length < PAGE_SIZE) {
+        if (newGames.error) {
+          console.log("Error fetching games:", newGames.error);
+        }
+
+        if (newGames.history) {
+          if (newGames.history.length === 0) {
             setHasMore(false);
+          } else {
+            const newGs = newGames.history;
+            setGames((prev) => (newPage === 1 ? newGs : [...prev, ...newGs]));
+            setPage(newPage + 1);
+            if (newGames.history.length < PAGE_SIZE) {
+              setHasMore(false);
+            }
           }
         }
       } catch (error) {

@@ -1,13 +1,13 @@
 import Header from "@/components/Navbar/Header";
 import AuthProvider from "@/contexts/AuthProvider";
 import "@/styles/globals.css";
-import { createTheme, ThemeProvider } from "@mui/material";
+import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 import type { AppProps } from "next/app";
 import Head from "next/head";
 import { useState } from "react";
 
 export default function App({ Component, pageProps }: AppProps) {
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
   const lightTheme = createTheme({
     palette: {
@@ -56,6 +56,7 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <AuthProvider>
       <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+        <CssBaseline />
         <div
           style={{
             minHeight: "100vh",

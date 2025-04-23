@@ -7,6 +7,7 @@ type submitGameProps = {
   sqA: GameFormSquadType;
   sqB: GameFormSquadType;
   gameWeight: string;
+  sessionId: string;
 };
 
 export async function submitGame({
@@ -14,6 +15,7 @@ export async function submitGame({
   sqA,
   sqB,
   gameWeight,
+  sessionId,
 }: submitGameProps) {
   try {
     const { data: game, error } = await supabase
@@ -26,6 +28,7 @@ export async function submitGame({
           squad_a_id: sqA.id,
           squad_b_id: sqB.id,
           game_weight: gameWeight,
+          session_id: sessionId,
         },
       ])
       .select("id")

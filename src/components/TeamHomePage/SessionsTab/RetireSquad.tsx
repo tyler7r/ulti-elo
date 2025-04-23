@@ -62,7 +62,7 @@ const RetireSquad = ({
       // 1. Update the squad to inactive
       const { error: squadError } = await supabase
         .from("squads")
-        .update({ active: false })
+        .update({ session_id: "" })
         .eq("id", squadId);
 
       if (squadError) throw squadError;

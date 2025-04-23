@@ -1,11 +1,11 @@
 import GameHistory from "@/components/GameHistory/GameHistory";
 import Leaderboard from "@/components/Leaderboard";
-import PlayTab from "@/components/TeamHomePage/PlayTab";
+import SessionsTab from "@/components/TeamHomePage/SessionsTab";
 import NoLogoAvatar from "@/components/Utils/NoLogoAvatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { TeamType } from "@/lib/types";
-import LockIcon from "@mui/icons-material/Lock";
+import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import SettingsIcon from "@mui/icons-material/Settings";
 import {
   Alert,
@@ -39,6 +39,7 @@ const TeamHomePage = () => {
     severity: "error" | "success" | "info";
   }>({ message: null, severity: "error" });
   const [ownerName, setOwnerName] = useState<string | undefined>(undefined);
+  const [activeSession, setActiveSession] = useState(false);
 
   const router = useRouter();
   const teamId = router.query.teamId as string;
@@ -78,28 +79,32 @@ const TeamHomePage = () => {
     }
   }, [teamId, userRole]);
 
+  const fetchActiveSession = useCallback(async () => {
+    const { data } = await supabase
+      .from("sessions")
+      .select()
+      .eq("active", true)
+      .eq("team_id", teamId)
+      .single();
+    if (data) setActiveSession(true);
+    else setActiveSession(false);
+  }, [teamId]);
+
   useEffect(() => {
     if (teamId) {
       void fetchTeam(teamId);
       void fetchPendingRequests();
+      void fetchActiveSession();
     }
-  }, [teamId, userRole, fetchPendingRequests]);
+  }, [teamId, userRole, fetchPendingRequests, fetchActiveSession]);
 
   useEffect(() => {
     if (router.isReady && queryTab) {
       let tabIndex = 0;
       if (queryTab === "leaderboard") {
         tabIndex = 0;
-      } else if (queryTab === "play") {
-        if (userRole) {
-          tabIndex = 1;
-        } else {
-          // Redirect to leaderboard or stay on the current tab (default is leaderboard)
-          // You can choose to not update activeTab here, keeping it at the default (0)
-          // Or you can explicitly navigate to the leaderboard
-          router.push(`/team/${teamId}`); // Redirect to /team/[teamId] which defaults to leaderboard
-          return; // Important to prevent further tab setting
-        }
+      } else if (queryTab === "sessions") {
+        tabIndex = 1;
       } else if (queryTab === "history") {
         tabIndex = 2;
       }
@@ -113,11 +118,7 @@ const TeamHomePage = () => {
     if (newValue === 0) {
       newTabParam = "leaderboard";
     } else if (newValue === 1) {
-      if (!userRole) {
-        setOpenRequestAdminDialog(true);
-        return; // Prevent tab change
-      }
-      newTabParam = "play";
+      newTabParam = "sessions";
     } else if (newValue === 2) {
       newTabParam = "history";
     }
@@ -207,107 +208,134 @@ const TeamHomePage = () => {
   };
 
   return (
-    <Box sx={{ width: "100%" }}>
-      <div className="flex w-full items-center justify-center mt-4">
-        {team?.logo_url ? (
-          <Image
-            src={team.logo_url}
-            alt={`${team.name} Logo`}
-            width={50} // Adjust size as needed
-            height={50} // Adjust size as needed
-            className="rounded mr-2" // Optional: Add rounded corners with Tailwind CSS
-          />
-        ) : (
-          team?.name && <NoLogoAvatar size="large" name={team.name} />
-        )}
-        <Typography
-          variant={isSmallScreen ? "h4" : "h3"}
-          fontWeight={"bold"}
-          sx={{ textAlign: "center" }}
+    team && (
+      <Box sx={{ width: "100%" }}>
+        <Box
+          display={"flex"}
+          flexDirection={"column"}
+          p={1}
+          px={2}
+          pt={2}
+          justifyContent={"center"}
+          alignItems={"flex-start"}
+          gap={1}
         >
-          {team?.name}
-        </Typography>
-        {user && userRole && (
-          <IconButton onClick={handleNavigateToAdmin} size="small">
-            <Badge badgeContent={pendingRequests} color="secondary">
-              <SettingsIcon />
-            </Badge>
-          </IconButton>
-        )}
-      </div>
-      <Tabs
-        value={activeTab}
-        onChange={handleTabChange}
-        aria-label="team tabs"
-        variant="fullWidth"
-        sx={{ mt: 2 }}
-      >
-        <Tab label="Leaderboard" />
-        <Tab
-          label="Play"
-          icon={user && userRole ? undefined : <LockIcon fontSize="small" />}
-          iconPosition="start"
-        />
-        <Tab label="History" />
-      </Tabs>
-
-      <Box>
-        {activeTab === 1 && team && <PlayTab team={team} />}
-
-        <Dialog
-          open={openRequestAdminDialog}
-          onClose={handleRequestDialogClose}
-        >
-          <DialogTitle fontWeight={"bold"}>Request Admin Access</DialogTitle>
-          <DialogContent>
-            <Typography>
-              {user
-                ? `You must be a team admin for ${
-                    team?.name ? team.name : "this team"
-                  } to record games. Request admin access to
-              this team. The team owner (${ownerName}) will be notified.`
-                : `You must have a registered account and be a team admin for ${
-                    team?.name ? team.name : "this team"
-                  } before you can record games.`}
-            </Typography>
-          </DialogContent>
-          {requestAdminMessage.message && (
-            <Alert severity={requestAdminMessage.severity}>
-              {requestAdminMessage.message}
-            </Alert>
-          )}
-          <DialogActions>
-            <Button
-              disabled={requestAdminLoading}
-              variant="outlined"
-              onClick={handleRequestAdmin}
+          <div className="flex w-full items-center gap-2">
+            {team.logo_url ? (
+              <Image
+                src={team.logo_url}
+                alt={`${team.name} Logo`}
+                width={50} // Adjust size as needed
+                height={50} // Adjust size as needed
+                className="rounded" // Optional: Add rounded corners with Tailwind CSS
+              />
+            ) : (
+              team.name && <NoLogoAvatar size="large" name={team.name} />
+            )}
+            <Typography
+              variant={isSmallScreen ? "h4" : "h3"}
+              fontWeight={"bold"}
+              sx={{ textAlign: "center" }}
             >
-              {requestAdminLoading
-                ? "Loading..."
-                : user
-                ? "Send Request"
-                : "Login"}
+              {team.name}
+            </Typography>
+            {user && userRole && (
+              <IconButton onClick={handleNavigateToAdmin} size="small">
+                <Badge badgeContent={pendingRequests} color="secondary">
+                  <SettingsIcon />
+                </Badge>
+              </IconButton>
+            )}
+          </div>
+          {user && !userRole && (
+            <Button
+              size="small"
+              variant="outlined"
+              color="secondary"
+              onClick={() => setOpenRequestAdminDialog(true)}
+            >
+              Request Admin Access
             </Button>
-            <Button onClick={handleRequestDialogClose} color="secondary">
-              Cancel
-            </Button>
-          </DialogActions>
-        </Dialog>
+          )}
+        </Box>
+        <Tabs
+          value={activeTab}
+          onChange={handleTabChange}
+          aria-label="team tabs"
+          variant="scrollable"
+          scrollButtons="auto"
+        >
+          <Tab label="Leaderboard" />
+          <Tab
+            label="Sessions"
+            icon={
+              activeSession ? (
+                <FiberManualRecordIcon fontSize="small" color="error" />
+              ) : undefined
+            }
+            iconPosition="end"
+          />
+          <Tab label="History" />
+        </Tabs>
 
-        {activeTab === 0 && (
-          <Box>
-            <Leaderboard teamId={teamId} />
-          </Box>
-        )}
+        <Box>
+          {activeTab === 1 && team && <SessionsTab team={team} />}
 
-        {activeTab === 2 && (
-          <Box>
-            {/* Add Game History Component Here */}
-            <GameHistory teamId={teamId} />
-          </Box>
-        )}
+          <Dialog
+            open={openRequestAdminDialog}
+            onClose={handleRequestDialogClose}
+          >
+            <DialogTitle fontWeight={"bold"}>Request Admin Access</DialogTitle>
+            <DialogContent>
+              <Typography>
+                {user
+                  ? `You must be a team admin for ${
+                      team?.name ? team.name : "this team"
+                    } to record games. Request admin access to
+              this team. The team owner (${ownerName}) will be notified.`
+                  : `You must have a registered account and be a team admin for ${
+                      team?.name ? team.name : "this team"
+                    } before you can record games.`}
+              </Typography>
+            </DialogContent>
+            {requestAdminMessage.message && (
+              <Alert severity={requestAdminMessage.severity}>
+                {requestAdminMessage.message}
+              </Alert>
+            )}
+            <DialogActions>
+              <Button
+                disabled={requestAdminLoading}
+                variant="outlined"
+                onClick={handleRequestAdmin}
+              >
+                {requestAdminLoading
+                  ? "Loading..."
+                  : user
+                  ? "Send Request"
+                  : "Login"}
+              </Button>
+              <Button onClick={handleRequestDialogClose} color="secondary">
+                Cancel
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {activeTab === 0 && (
+            <Box>
+              <Leaderboard teamId={teamId} />
+            </Box>
+          )}
+
+          {activeTab === 2 && (
+            <Box>
+              {/* Add Game History Component Here */}
+              <GameHistory teamId={teamId} />
+            </Box>
+          )}
+        </Box>
       </Box>
-    </Box>
+    )
   );
 };
 

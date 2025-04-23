@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { PostgrestError } from "@supabase/supabase-js";
 import { GameHistoryType } from "./types";
 
 type FilterParam = {
@@ -6,6 +7,7 @@ type FilterParam = {
   squadId?: string;
   playerTeamIds?: string[];
   gameId?: string;
+  sessionId?: string;
   page?: number;
   limit?: number;
 };
@@ -15,9 +17,13 @@ export const getGameHistory = async ({
   squadId,
   playerTeamIds,
   gameId,
+  sessionId,
   page = 1,
   limit = 5,
-}: FilterParam): Promise<GameHistoryType[]> => {
+}: FilterParam): Promise<{
+  history: GameHistoryType[] | null;
+  error?: PostgrestError;
+}> => {
   const offset = (page - 1) * limit;
   let query = supabase
     .from("games")
@@ -31,6 +37,7 @@ export const getGameHistory = async ({
       squad_a_score,
       squad_b_score,
       game_weight,
+      session_id,
       squadA: squads!games_squad_a_id_fkey(*), 
       squadB: squads!games_squad_b_id_fkey(*),
       team: teams!inner(*),
@@ -54,12 +61,13 @@ export const getGameHistory = async ({
   if (playerTeamIds && playerTeamIds.length > 0)
     query = query.in("game_players.pt_id", playerTeamIds);
   if (gameId) query = query.eq("id", gameId);
+  if (sessionId) query = query.eq("session_id", sessionId);
 
   const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching game history:", error);
-    return [];
+    return { error: error, history: null };
   }
 
   // Map the result into GameHistoryType format
@@ -72,6 +80,7 @@ export const getGameHistory = async ({
     squad_a_id: game.squad_a_id,
     squad_b_id: game.squad_b_id,
     game_weight: game.game_weight,
+    session_id: game.session_id,
     team: {
       id: game.team_id,
       name: game.team.name,
@@ -82,7 +91,6 @@ export const getGameHistory = async ({
         id: game.squad_a_id,
         name: game.squadA.name,
         team_id: game.team_id,
-        active: game.squadA.active,
       },
       players: game.game_players
         .filter((gp) => gp.squad_id === game.squad_a_id)
@@ -109,7 +117,6 @@ export const getGameHistory = async ({
         id: game.squad_b_id,
         name: game.squadB.name,
         team_id: game.team_id,
-        active: game.squadB.active,
       },
       players: game.game_players
         .filter((gp) => gp.squad_id === game.squad_b_id)
@@ -133,5 +140,5 @@ export const getGameHistory = async ({
     },
   }));
 
-  return history;
+  return { history: history };
 };

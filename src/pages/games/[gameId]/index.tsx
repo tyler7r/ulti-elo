@@ -12,8 +12,9 @@ const PostGame = () => {
   useEffect(() => {
     const fetchGame = async (gId: string) => {
       const gm = await getGameHistory({ gameId: gId });
-      if (gm) {
-        setGame(gm[0]);
+      if (gm.history) {
+        const games = gm.history;
+        setGame(games[0]);
       }
     };
     if (gameId) fetchGame(gameId);

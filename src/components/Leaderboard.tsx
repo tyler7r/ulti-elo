@@ -348,7 +348,7 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
 
                 return (
                   <TableRow
-                    key={player.player_id + player.team_id}
+                    key={player.pt_id + player.team_id}
                     sx={{ cursor: "default" }}
                   >
                     {/* Rank Column */}

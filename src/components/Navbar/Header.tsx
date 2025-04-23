@@ -1,5 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
-import AddIcon from "@mui/icons-material/Add"; // PlusIcon
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import {
@@ -43,8 +43,12 @@ const Header = ({ toggleTheme, isDarkMode }: HeaderProps) => {
   };
 
   const openCreatePlayerModal = () => {
-    setOpenPlayerModal(true);
-    handleClose();
+    if (user) {
+      setOpenPlayerModal(true);
+      handleClose();
+    } else {
+      setOpenLogin(true);
+    }
   };
 
   const openCreateTeamModal = () => {
@@ -98,7 +102,7 @@ const Header = ({ toggleTheme, isDarkMode }: HeaderProps) => {
                 aria-haspopup="true"
                 size="small"
               >
-                <AddIcon fontSize="large" />
+                <AddCircleOutlineIcon />
               </IconButton>
               {/* Menu */}
               <Menu
@@ -106,6 +110,7 @@ const Header = ({ toggleTheme, isDarkMode }: HeaderProps) => {
                 anchorEl={anchorEl}
                 open={open}
                 onClose={handleClose}
+                sx={{ padding: 0 }}
               >
                 <MenuItem
                   onClick={openCreatePlayerModal}

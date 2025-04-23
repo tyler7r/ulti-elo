@@ -76,7 +76,7 @@ const CreateSquad = ({
     try {
       const { data: squad, error } = await supabase
         .from("squads")
-        .insert([{ name: squadName, team_id: teamId }])
+        .insert([{ name: squadName, team_id: teamId, session_id: "" }])
         .select("id")
         .single();
 

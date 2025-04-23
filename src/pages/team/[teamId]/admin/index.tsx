@@ -187,7 +187,8 @@ const AdminPage = () => {
         value={activeTab}
         onChange={handleTabChange}
         aria-label="team admin tabs"
-        variant="fullWidth"
+        variant="scrollable"
+        scrollButtons="auto"
       >
         <Tab label="Players" icon={<PersonAddIcon />} />
         <Tab
