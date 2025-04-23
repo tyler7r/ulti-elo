@@ -7,7 +7,7 @@ import Head from "next/head";
 import { useState } from "react";
 
 export default function App({ Component, pageProps }: AppProps) {
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
 
   const lightTheme = createTheme({
     palette: {
