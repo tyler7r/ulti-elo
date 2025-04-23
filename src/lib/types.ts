@@ -10,6 +10,7 @@ export type GameType = {
   squad_a_id: string;
   squad_b_id: string;
   game_weight: string;
+  session_id: string;
 };
 
 export type GamePlayerType = {
@@ -120,12 +121,16 @@ export type GameFormSquadType = {
   score: number;
 };
 
-export type SquadType = {
+export interface SquadType {
   name: string;
   id: string;
   team_id: string;
-  active: boolean;
-};
+}
+
+export interface SquadTypeWithSession extends SquadType {
+  session_id: string;
+  session_round: number;
+}
 
 export type PlayerHistoryType = {
   pt_id: string;
@@ -154,6 +159,7 @@ export type GameHistoryType = {
   squad_a_id: string;
   squad_b_id: string;
   game_weight: string;
+  session_id: string;
   team: TeamType;
   squadA: {
     info: SquadType;
@@ -199,6 +205,7 @@ export interface Game {
   squad_a_score: number;
   squad_b_score: number;
   game_weight: string;
+  session_id: string;
 }
 
 export interface GameDetails {
@@ -207,10 +214,108 @@ export interface GameDetails {
   squadB: Squad;
 }
 
+export type GameScheduleType = {
+  id: string;
+  squad_a_id: string;
+  squad_b_id: string;
+  status: string;
+  squad_a_score: number;
+  squad_b_score: number;
+  created_at: string;
+  updated_at: string;
+  session_id: string;
+  game_number: number;
+  round_no: number;
+};
+
+export type GameScheduleInsertType = {
+  id?: string;
+  squad_a_id: string;
+  squad_b_id: string;
+  status: string;
+  squad_a_score: number;
+  squad_b_score: number;
+  created_at?: string;
+  updated_at?: string;
+  session_id: string;
+  game_number: number;
+  round_no: number;
+};
+
+export type SessionType = {
+  id: string;
+  team_id: string;
+  title: string;
+  session_date: string;
+  created_at: string;
+  updated_at: string;
+  active: boolean;
+};
+
 export interface PlayerTeam {
   player_id: string;
   players: Player;
 }
+
+// Add these within SessionPage.tsx or to your types file
+
+export type SessionAttendeeWithStats = {
+  id: string; // session_attendees table's own ID
+  session_id: string;
+  pt_id: string; // Foreign key to player_teams
+  created_at: string;
+  updated_at: string;
+
+  // Stats Before Session Start
+  elo_before: number | null;
+  mu_before: number | null;
+  sigma_before: number | null;
+  wins_before: number | null;
+  losses_before: number | null;
+  rank_before: number | null;
+
+  // Include joined player details (current info) for display
+  player_teams: PlayerTeamType;
+};
+
+// Type for the result of: session_attendees(*, player_teams(*, players(*)))
+export type FetchedSessionAttendee = {
+  id: string;
+  pt_id: string;
+  session_id: string;
+  player_teams: PlayerTeamType; // Supabase might return 'players' object
+};
+
+// Type for the result of: squad_players(*, player_teams(*, players(*)))
+export type FetchedSquadPlayer = {
+  pt_id: string;
+  squad_id: string;
+  player_teams: PlayerTeamType;
+};
+
+// Type for the result of: squads(*, squad_players(*, player_teams(*, players(*))))
+export type SquadWithPlayerDetails = SquadType & {
+  session_round: number;
+  squad_players: FetchedSquadPlayer[];
+};
+
+// Type for the result of: game_schedule(*, squad_a:squad_a_id(*), squad_b:squad_b_id(*))
+export type GameScheduleWithSquadDetails = GameScheduleType & {
+  squad_a: SquadType | null;
+  squad_b: SquadType | null;
+};
+
+export type GameScheduleWithPlayerDetails = GameScheduleType & {
+  round_no: number;
+  squad_a: SquadWithPlayerDetails;
+  squad_b: SquadWithPlayerDetails;
+};
+
+// Type for the result of: games(*, squad_a:squad_a_id(*), squad_b:squad_b_id(*))
+export type GameWithSquadDetails = GameType & {
+  squad_a: SquadType | null;
+  squad_b: SquadType | null;
+};
 
 export type Database = MergeDeep<
   GeneratedDatabase,

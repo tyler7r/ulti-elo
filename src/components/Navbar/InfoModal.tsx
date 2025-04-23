@@ -5,6 +5,9 @@ import {
   Box,
   Fade,
   IconButton,
+  List,
+  ListItem,
+  ListItemText,
   Modal,
   Paper,
   Tab,
@@ -80,7 +83,8 @@ const InfoModal: React.FC = () => {
               onChange={handleTabChange}
               indicatorColor="primary"
               textColor="primary"
-              variant="fullWidth"
+              variant="scrollable"
+              scrollButtons="auto"
               sx={{ mt: 2 }}
             >
               <Tab label="ELO Calculation" />
@@ -155,89 +159,145 @@ const InfoModal: React.FC = () => {
               )}
 
               {tabIndex === 1 && (
-                <Box
-                  display="flex"
-                  flexDirection="column"
-                  gap={2}
-                  className="text-sm"
-                >
-                  <div className="flex flex-col">
+                <Box display="flex" flexDirection="column" gap={1}>
+                  <Box>
                     <Typography variant="h6" fontWeight="bold" gutterBottom>
                       🚀 Getting Started with Ulti-ELO
                     </Typography>
-                    <Typography variant="body1" component="p">
-                      Here is how you can **start tracking your games** and
-                      climbing the leaderboard:
+                    <Typography variant="body1">
+                      Ready to track your games and climb the leaderboard?
+                      Here&rsquo;s how:
                     </Typography>
-                  </div>
+                  </Box>
 
-                  <Typography variant="body1">
-                    ✅ 1. Create Your Player & Team
-                  </Typography>
-                  <ul className="text-sm">
-                    <li>
-                      Click the <strong className="text-lg">+</strong> button in
-                      the top-right corner. Then{" "}
-                      <strong>
-                        &ldquo;Create Player&rdquo; / &ldquo;Create Team&rdquo;
-                      </strong>
-                      .
-                    </li>
-                    <li>Name your player and associate it with your team.</li>
-                    <li>
-                      Create your team and add your teammates by repeating the
-                      process.
-                    </li>
-                  </ul>
+                  <List dense disablePadding>
+                    {/* Step 1 */}
+                    <ListItem alignItems="flex-start">
+                      <ListItemText
+                        primary={
+                          <Typography variant="body1" fontWeight="bold">
+                            1. Create Your Account & Team
+                          </Typography>
+                        }
+                        secondary={
+                          <>
+                            First things first, you&rsquo;ll need an account to
+                            save your progress. Once you&rsquo;re signed up,
+                            create your team! Then, start adding players to your
+                            team roster. You can add yourself and your teammates
+                            here.
+                          </>
+                        }
+                      />
+                    </ListItem>
+                    {/* Step 2 */}
+                    <ListItem alignItems="flex-start">
+                      <ListItemText
+                        primary={
+                          <Typography variant="body1" fontWeight="bold">
+                            2. Start a Session
+                          </Typography>
+                        }
+                        secondary={
+                          <>
+                            Sessions are key! They help manage who&rsquo;s
+                            playing on a given day and make setting up games a
+                            breeze. Click &quot;Create New Session&quot; on your
+                            team&rsquo;s Play tab.
+                          </>
+                        }
+                      />
+                    </ListItem>
+                    {/* Step 3 */}
+                    <ListItem alignItems="flex-start">
+                      <ListItemText
+                        primary={
+                          <Typography variant="body1" fontWeight="bold">
+                            3. Build Your Squads
+                          </Typography>
+                        }
+                        secondary={
+                          <>
+                            Inside the session setup, you&rsquo;ll add attendees
+                            for the day. Then, create your squads! You can
+                            manually drag players, auto-assign them randomly, or
+                            let the app create balanced teams based on ELO. Feel
+                            free to make multiple rounds of squads (like mini
+                            teams first, then full-field). Don&rsquo;t worry if
+                            things change – you can edit squads or add more
+                            rounds later!
+                          </>
+                        }
+                      />
+                    </ListItem>
+                    {/* Step 4 */}
+                    <ListItem alignItems="flex-start">
+                      <ListItemText
+                        primary={
+                          <Typography variant="body1" fontWeight="bold">
+                            4. Follow the Game Schedule
+                          </Typography>
+                        }
+                        secondary={
+                          <>
+                            Once squads are set, Ulti-ELO generates a handy game
+                            schedule for the round. Just read off the matchups
+                            and click &quot;Record Score&quot; when a game
+                            finishes. Need to adjust? You can easily reorder
+                            games, add extra matchups, or delete games that
+                            didn&rsquo;t happen.
+                          </>
+                        }
+                      />
+                    </ListItem>
+                    {/* Step 5 */}
+                    <ListItem alignItems="flex-start">
+                      <ListItemText
+                        primary={
+                          <Typography variant="body1" fontWeight="bold">
+                            5. Complete the Session & Review
+                          </Typography>
+                        }
+                        secondary={
+                          <>
+                            When practice is over, hit &quot;Mark Complete&quot;
+                            at the top of the session page. Remember, only one
+                            session can be active per team. Afterwards, check
+                            out the &quot;Session Review&quot; tab to see who
+                            made the biggest ELO jumps and racked up the most
+                            wins!
+                          </>
+                        }
+                      />
+                    </ListItem>
+                    {/* Step 6 */}
+                    <ListItem alignItems="flex-start">
+                      <ListItemText
+                        primary={
+                          <Typography variant="body1" fontWeight="bold">
+                            6. Need to Fix Something?
+                          </Typography>
+                        }
+                        secondary={
+                          <>
+                            Mistakes happen! You can edit individual game scores
+                            or player lineups for up to 3 days after the game
+                            was played. For bigger session changes (like
+                            adding/removing attendees after the fact), you have
+                            up to 7 days.
+                          </>
+                        }
+                      />
+                    </ListItem>
+                  </List>
 
-                  <Typography variant="body1">
-                    📋 2. Manage Your Squads
-                  </Typography>
-                  <ul>
-                    <li>
-                      Once your team is created, it will appear on the home
-                      screen.
-                    </li>
-                    <li>
-                      Click into your team to **create scrimmage squads** from
-                      your player list.
-                    </li>
-                    <li>
-                      You must have at least **two squads** before recording
-                      your first game.
-                    </li>
-                  </ul>
-
-                  <Typography variant="body1">
-                    🎯 3. Playing Multiple Games
-                  </Typography>
-                  <ul>
-                    <li>
-                      If you plan on playing multiple games, **reuse your
-                      squads** instead of creating new ones every time.
-                    </li>
-                    <li>
-                      Players can not be on **two active squads** at once. To
-                      switch a player between squads, edit the squads first.
-                    </li>
-                  </ul>
-
-                  <Typography variant="body1">
-                    🔥 4. Retire & Refresh
-                  </Typography>
-                  <ul>
-                    <li>
-                      After a series of games, you can **retire your squads**
-                      and create new ones for fresh matchups.
-                    </li>
-                    <li>
-                      No stress—retiring squads will not delete your game
-                      history!
-                    </li>
-                  </ul>
-
-                  <Typography variant="body2" color="textSecondary">
-                    Start creating squads, tracking games, and watch your
+                  <Typography
+                    variant="body2"
+                    color="secondary"
+                    fontWeight={"bold"}
+                    sx={{ mt: 2, textAlign: "center" }}
+                  >
+                    Start creating sessions, tracking games, and watch your
                     **Ulti-ELO climb**! 🚀
                   </Typography>
                 </Box>

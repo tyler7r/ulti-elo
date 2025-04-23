@@ -206,7 +206,7 @@ const EditSquad = ({
     try {
       const { error } = await supabase
         .from("squads")
-        .update({ active: false })
+        .update({ session_id: "" })
         .eq("id", squadId);
 
       if (error) throw error;

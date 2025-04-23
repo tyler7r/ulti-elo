@@ -1,10 +1,11 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { PlayerType } from "@/lib/types";
+import { AlertType, PlayerType } from "@/lib/types";
 import CloseIcon from "@mui/icons-material/Close";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import DeleteIcon from "@mui/icons-material/Delete"; // Import the delete icon
 import {
+  Alert,
   Autocomplete,
   Backdrop,
   Box,
@@ -33,8 +34,10 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
   const [selectedPlayers, setSelectedPlayers] = useState<PlayerType[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchingPlayers, setFetchingPlayers] = useState(true);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState<boolean>(false);
+  const [alert, setAlert] = useState<AlertType>({
+    message: null,
+    severity: "error",
+  });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -100,7 +103,10 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
 
       if (uploadError) {
         console.error("Error uploading logo:", uploadError);
-        setError(`Error uploading logo: ${uploadError.message}`);
+        setAlert({
+          message: `Error uploading logo: ${uploadError.message}`,
+          severity: "error",
+        });
         return null;
       }
 
@@ -111,7 +117,10 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
       return publicUrlData.publicUrl;
     } catch (err) {
       console.error("Error during logo upload:", err);
-      setError("An unexpected error occurred during logo upload.");
+      setAlert({
+        message: "An unexpected error occurred during logo upload.",
+        severity: "error",
+      });
       return null;
     }
   };
@@ -120,11 +129,13 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setSuccess(false);
+    setAlert({ message: null, severity: "error" });
 
     if (!user) {
-      setError("You must be signed in to create a team!");
+      setAlert({
+        message: "You must be signed in to create a team!",
+        severity: "error",
+      });
       setLoading(false);
       return;
     }
@@ -138,7 +149,10 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
         .single();
 
       if (teamError) {
-        setError(`Error creating team: ${teamError.message}`);
+        setAlert({
+          message: `Error creating team: ${teamError.message}`,
+          severity: "error",
+        });
         setLoading(false);
         return;
       }
@@ -162,7 +176,10 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
 
       if (updateTeamError) {
         console.error("Error updating team with logo URL:", updateTeamError);
-        setError(`Error updating team with logo: ${updateTeamError.message}`);
+        setAlert({
+          message: `Error updating team with logo: ${updateTeamError.message}`,
+          severity: "error",
+        });
         setLoading(false);
         return;
       }
@@ -172,9 +189,10 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
         .insert([{ is_owner: true, team_id: teamId, user_id: user.id }]);
 
       if (teamAdminError) {
-        setError(
-          `Error creating team admin account: ${teamAdminError.message}`
-        );
+        setAlert({
+          message: `Error creating team admin account: ${teamAdminError.message}`,
+          severity: "error",
+        });
         setLoading(false);
         return;
       }
@@ -191,7 +209,10 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
           .insert(playerTeams);
 
         if (playerTeamsError) {
-          setError(`Error assigning players: ${playerTeamsError.message}.`);
+          setAlert({
+            message: `Error assigning players: ${playerTeamsError.message}.`,
+            severity: "error",
+          });
           setLoading(false);
           return;
         }
@@ -201,13 +222,14 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
       setSelectedPlayers([]);
       setLogoFile(null);
       setLogoPreviewUrl(null);
-      setSuccess(true);
+      setAlert({ message: "Team successfully created!", severity: "success" });
       setTimeout(() => {
-        router.push(`/team/${teamId}`);
-      });
+        onClose();
+        void router.push(`/team/${teamId}`);
+      }, 500);
     } catch (err) {
       console.error("Unexpected error:", err);
-      setError("An unexpected error occurred.");
+      setAlert({ message: "An unexpected error occurred.", severity: "error" });
     } finally {
       setLoading(false);
     }
@@ -256,23 +278,8 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
               </IconButton>
             </Box>
 
-            {error && (
-              <Typography
-                variant="overline"
-                sx={{ fontWeight: "bold" }}
-                color="error"
-              >
-                {error}
-              </Typography>
-            )}
-            {success && (
-              <Typography
-                variant="overline"
-                sx={{ fontWeight: "bold" }}
-                color="success"
-              >
-                Team created successfully!
-              </Typography>
+            {alert.message && (
+              <Alert severity={alert.severity}>{alert.message}</Alert>
             )}
 
             <form

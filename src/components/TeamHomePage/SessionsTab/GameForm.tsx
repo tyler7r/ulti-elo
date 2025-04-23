@@ -19,6 +19,8 @@ import {
   Modal,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -50,6 +52,7 @@ const GameForm = ({
     squad_a_id: squadA?.id || "",
     squad_b_id: squadB?.id || "",
     game_weight: "standard",
+    session_id: "",
   });
   const [alert, setAlert] = useState<AlertType>({
     message: null,
@@ -60,6 +63,8 @@ const GameForm = ({
   const [isInfoModalOpen, setIsInfoModalOpen] = useState<boolean>(false);
 
   const router = useRouter();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
     const fetchSquads = async () => {
@@ -174,6 +179,7 @@ const GameForm = ({
       sqA,
       sqB,
       gameWeight,
+      sessionId: formData.session_id,
     });
     if (success) {
       setAlert({ message: "Game Recorded!", severity: "success" });
@@ -290,29 +296,49 @@ const GameForm = ({
                 </div>
               )}
               {/* Scores */}
-              <div className="flex w-full gap-2">
-                <TextField
-                  fullWidth
-                  margin="normal"
-                  label={`${
-                    squadA?.name ? `${squadA.name} Score` : "Squad B Score"
-                  }`}
-                  type="number"
-                  name="squad_a_score"
-                  onChange={handleInputChange}
-                  required
-                />
-                <TextField
-                  required
-                  fullWidth
-                  margin="normal"
-                  label={`${
-                    squadB?.name ? `${squadB.name} Score` : "Squad B Score"
-                  }`}
-                  type="number"
-                  name="squad_b_score"
-                  onChange={handleInputChange}
-                />
+              <div
+                className={`${
+                  isMobile ? "flex-col" : "flex-row justify-between"
+                } flex w-full`}
+              >
+                <Box display={"flex"} alignItems={"center"} gap={1}>
+                  <Box
+                    height={25}
+                    width={25}
+                    sx={{ backgroundColor: theme.palette.primary.main }}
+                  />
+                  <TextField
+                    fullWidth
+                    margin="normal"
+                    label={`${
+                      squadA?.name ? `${squadA.name} Score` : "Squad A Score"
+                    }`}
+                    type="number"
+                    name="squad_a_score"
+                    onChange={handleInputChange}
+                    required
+                    size="small"
+                  />
+                </Box>
+                <Box display={"flex"} alignItems={"center"} gap={1}>
+                  <Box
+                    height={25}
+                    width={25}
+                    sx={{ backgroundColor: theme.palette.secondary.main }}
+                  />
+                  <TextField
+                    required
+                    fullWidth
+                    margin="normal"
+                    label={`${
+                      squadB?.name ? `${squadB.name} Score` : "Squad B Score"
+                    }`}
+                    type="number"
+                    name="squad_b_score"
+                    onChange={handleInputChange}
+                    size="small"
+                  />
+                </Box>
               </div>
               <FormControl component="fieldset" sx={{ marginBottom: 2 }}>
                 <div className="flex w-full items-center">
@@ -346,7 +372,7 @@ const GameForm = ({
                     size="small"
                     sx={{ fontWeight: "bold" }}
                   >
-                    Casual
+                    0.75x
                   </Button>
                   <Button
                     onClick={() => handleWeightChange("standard")}
@@ -361,7 +387,7 @@ const GameForm = ({
                     size="small"
                     sx={{ fontWeight: "bold" }}
                   >
-                    Standard
+                    1x
                   </Button>
                   <Button
                     onClick={() => handleWeightChange("competitive")}
@@ -378,7 +404,7 @@ const GameForm = ({
                     size="small"
                     sx={{ fontWeight: "bold" }}
                   >
-                    Competitive
+                    1.25x
                   </Button>
                 </ButtonGroup>
               </FormControl>

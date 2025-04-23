@@ -7,6 +7,7 @@ import GamePlayers from "./GamePlayers";
 type GamePlayersContainerType = {
   game: GameType;
   singleGame?: boolean;
+  small?: boolean;
 };
 
 export type GamePlayersType = {
@@ -21,6 +22,7 @@ export type GamePlayersType = {
 const GamePlayersContainer = ({
   game,
   singleGame,
+  small,
 }: GamePlayersContainerType) => {
   const [squadA, setSquadA] = useState<SquadType | null>(null);
   const [squadB, setSquadB] = useState<SquadType | null>(null);
@@ -159,6 +161,7 @@ const GamePlayersContainer = ({
             isSquadA={true}
             players={squadAPlayers}
             singleGame={singleGame}
+            small={small}
           />
         </Box>
         <Box flex={1}>
@@ -167,6 +170,7 @@ const GamePlayersContainer = ({
             isSquadA={false}
             players={squadBPlayers}
             singleGame={singleGame}
+            small={small}
           />
         </Box>
       </div>

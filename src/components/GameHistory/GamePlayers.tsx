@@ -18,6 +18,7 @@ type GamePlayersProps = {
   players: GamePlayersType[];
   isSquadA: boolean;
   singleGame?: boolean;
+  small?: boolean;
 };
 
 const GamePlayers = ({
@@ -25,6 +26,7 @@ const GamePlayers = ({
   isSquadA,
   singleGame,
   players,
+  small,
 }: GamePlayersProps) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === "dark";
@@ -47,10 +49,10 @@ const GamePlayers = ({
   };
 
   return (
-    <div className="mt-4 w-full">
+    <div className="mt-2 w-full">
       <Typography
         color={isSquadA ? "primary" : "secondary"}
-        variant={singleGame ? "h5" : "h6"}
+        variant={singleGame ? "h5" : small ? "body1" : "h6"}
         fontWeight={"bold"}
       >
         {singleGame ? `${squad.name} Players` : squad.name}

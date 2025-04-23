@@ -110,6 +110,21 @@ export default async function handler(
             .status(500)
             .json({ error: "Failed to delete game players" });
         }
+
+        const { error: deleteGameSchedule } = await supabase
+          .from("game_schedule")
+          .delete()
+          .eq("game_id", gameId);
+        if (deleteGameSchedule) {
+          console.error(
+            "Error deleting game schedule row: ",
+            deleteGameSchedule
+          );
+          return res.status(200).json({
+            message:
+              "Game deleted, no game schedule record was found to delete.",
+          });
+        }
       }
 
       return res.status(200).json({

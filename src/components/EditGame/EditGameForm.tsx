@@ -36,6 +36,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
   const { user } = useAuth();
   const router = useRouter();
   const gmId = router.query.gameId;
+  const sessionId = router.query.sessionId;
   const [gameDetails, setGameDetails] = useState<GameDetails | null>(null);
   const [squadAScore, setSquadAScore] = useState<number | "">("");
   const [squadBScore, setSquadBScore] = useState<number | "">("");
@@ -210,7 +211,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
           message: "Game Edit and ELO recalculations done!",
           severity: "success",
         });
-        if (gmId) {
+        if (gmId || sessionId) {
           void router.reload();
         } else {
           void router.push(`/games/${gameDetails.game.id}`); // Redirect to game history page
@@ -252,7 +253,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
           message: "Game deleted successfully. ELO recalculations triggered.",
           severity: "success",
         });
-        if (gmId) {
+        if (gmId && !sessionId) {
           void router.push(`/team/${gameDetails.game.team_id}?tab=history`);
         } else {
           void router.reload();
@@ -360,7 +361,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
   return (
     <div className="w-full flex flex-col">
       <div className="w-full flex justify-between mb-4">
-        <Typography fontWeight={"bold"} variant="h6">
+        <Typography fontWeight={"bold"} variant="body1">
           Edit Game
         </Typography>
         <div className="flex gap-2 items-center justify-center">
@@ -392,7 +393,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
             endIcon={<DeleteIcon />}
             size="small"
           >
-            {deleteLoading ? "Deleting..." : "Delete Game"}
+            {deleteLoading ? "Deleting..." : "Delete"}
           </Button>
         </div>
       </div>
@@ -460,7 +461,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
             size="small"
             sx={{ fontWeight: "bold" }}
           >
-            Casual
+            0.75x
           </Button>
           <Button
             onClick={() => handleWeightChange("standard")}
@@ -469,7 +470,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
             size="small"
             sx={{ fontWeight: "bold" }}
           >
-            Standard
+            1x
           </Button>
           <Button
             onClick={() => handleWeightChange("competitive")}
@@ -478,7 +479,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
             size="small"
             sx={{ fontWeight: "bold" }}
           >
-            Competitive
+            1.25x
           </Button>
         </ButtonGroup>
       </FormControl>
@@ -530,7 +531,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
           endIcon={<DeleteIcon />}
           size="small"
         >
-          {deleteLoading ? "Deleting..." : "Delete Game"}
+          {deleteLoading ? "Deleting..." : "Delete"}
         </Button>
       </div>
     </div>
