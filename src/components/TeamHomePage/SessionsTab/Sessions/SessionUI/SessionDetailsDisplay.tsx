@@ -44,7 +44,7 @@ const SessionDetailsDisplay = ({
     ? format(new Date(session.created_at), "P") // e.g., Aug 17, 2024 1:00 PM
     : "Date not set";
 
-  const threeDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
+  const threeDaysInMilliseconds = 3 * 24 * 60 * 60 * 1000;
   const gameDate = new Date(session.created_at);
   const now = new Date();
   const isWithinEditWindow =
@@ -165,6 +165,7 @@ const SessionDetailsDisplay = ({
                 src={team.logo_url}
                 height={40}
                 width={40}
+                className="rounded"
               />
             ) : (
               <NoLogoAvatar name={team.name} size="small" />

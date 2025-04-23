@@ -1,7 +1,5 @@
-// /components/Sessions/SessionReviewDisplay.tsx (Adjust path)
-
 import { supabase } from "@/lib/supabase"; // Adjust path
-import { PlayerTeamType, SessionAttendeeWithStats } from "@/lib/types"; // Adjust path
+import { SessionAttendeeWithStats } from "@/lib/types"; // Use updated type
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import RemoveIcon from "@mui/icons-material/Remove"; // Icon for no change
@@ -21,10 +19,10 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import { useRouter } from "next/router";
+import { useRouter } from "next/router"; // Use next/router for Pages Router
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-// Updated sortable keys
+// --- Type Definitions ---
 type SortableKey =
   | "name"
   | "eloChange"
@@ -36,47 +34,59 @@ type SortableKey =
   | "currentRank";
 type SortDirection = "asc" | "desc";
 
-// Updated combined type for display
+// Combined type for display after fetching and calculating
 interface CalculatedReviewStats extends SessionAttendeeWithStats {
-  current_elo: number;
-  current_wins: number;
-  current_losses: number;
-  current_rank: number | null;
+  session_elo_before: number | null; // ELO before first session game
+  session_elo_after: number | null; // ELO after last session game
+  current_rank: number | null; // Current rank on the team
   eloChange: number;
-  winsChange: number; // Session Wins
-  lossesChange: number; // Session Losses
+  winsChange: number;
+  lossesChange: number;
   rankChange: number | null;
-  sessionWinPercent: number | null; // Win % for games played *during* the session
+  sessionWinPercent: number | null;
+  // Include player name directly for easier access
+  player_name: string;
 }
 
-type SessionReviewDisplayProps = {
-  attendeesWithStats: SessionAttendeeWithStats[]; // Contains ONLY before stats now
-  teamId: string; // Needed to fetch current ranks/stats
+// Type for the structure returned by the game_players query
+type GamePlayerData = {
+  pt_id: string;
+  elo_before: number;
+  elo_after: number;
+  wins_before: number;
+  wins_after: number;
+  losses_before: number;
+  losses_after: number;
+  games: { match_date: string } | null;
+};
+
+type SessionStatsProps = {
+  attendeesWithStats: SessionAttendeeWithStats[]; // Contains pt_id and stats_before_rank
+  teamId: string;
+  sessionId: string;
   isActive: boolean;
 };
 
-const SessionReviewDisplay = ({
+const SessionStats = ({
   attendeesWithStats,
   teamId,
+  sessionId,
   isActive,
-}: SessionReviewDisplayProps) => {
-  const [sortBy, setSortBy] = useState<SortableKey>("currentRank");
-  const [sortDir, setSortDir] = useState<SortDirection>("asc");
-  const [liveData, setLiveData] = useState<CalculatedReviewStats[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+}: SessionStatsProps) => {
   const theme = useTheme();
   const router = useRouter();
-  const isDarkMode = theme.palette.mode === "dark";
+  const [sortBy, setSortBy] = useState<SortableKey>("currentRank");
+  const [sortDir, setSortDir] = useState<SortDirection>("asc");
+  const [calculatedData, setCalculatedData] = useState<CalculatedReviewStats[]>(
+    []
+  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const headerBackgroundColor = isDarkMode ? "grey.700" : "grey.300";
-  const rowBackgroundColor = isDarkMode ? "grey.900" : "grey.100";
-  const rowHoverBackgroundColor = isDarkMode ? "grey.800" : "grey.200";
-
-  // --- Fetch Live Data ---
-  const fetchLiveStatsAndRank = useCallback(async () => {
+  // --- Fetch and Calculate Data ---
+  const calculateSessionStats = useCallback(async () => {
     if (!attendeesWithStats || attendeesWithStats.length === 0 || !teamId) {
-      setLiveData([]);
+      setCalculatedData([]);
       setLoading(false);
       return;
     }
@@ -85,116 +95,134 @@ const SessionReviewDisplay = ({
     const attendeePtIds = attendeesWithStats.map((a) => a.pt_id);
 
     try {
-      // Fetch Current Stats & All Team Players concurrently
-      const [statsResult, rankingResult] = await Promise.all([
-        supabase
-          .from("player_teams")
-          .select(
-            "pt_id, elo, mu, sigma, wins, losses, player:players!inner(name)"
-          )
-          .in("pt_id", attendeePtIds),
-        supabase
-          .from("player_teams")
-          .select("pt_id, elo")
-          .eq("team_id", teamId)
-          .order("elo", { ascending: false }),
-      ]);
+      // 1. Fetch all relevant game_players data for the session attendees
+      const { data: gamePlayersData, error: gpError } = await supabase
+        .from("game_players")
+        .select(
+          `
+                    pt_id,
+                    elo_before, elo_after,
+                    wins_before, wins_after,
+                    losses_before, losses_after,
+                    games!inner(match_date)
+                `
+        )
+        .in("pt_id", attendeePtIds)
+        .eq("games.session_id", sessionId) // Filter by session_id via join
+        .order("games(match_date)", { ascending: true }); // Order by game date
 
-      const { data: currentStatsData, error: statsError } = statsResult;
-      const { data: allTeamPlayersData, error: rankError } = rankingResult;
+      if (gpError)
+        throw new Error(`Failed to fetch game player data: ${gpError.message}`);
 
-      if (statsError)
-        throw new Error(`Failed to fetch current stats: ${statsError.message}`);
+      // 2. Fetch Current Team Ranking (for current rank and rank change)
+      const { data: allTeamPlayersData, error: rankError } = await supabase
+        .from("player_teams")
+        .select("pt_id, elo")
+        .eq("team_id", teamId)
+        .or(`wins.gt.0, losses.gt.0`) // Filter for players with games? Optional.
+        .order("elo", { ascending: false });
+
       if (rankError)
-        throw new Error(
-          `Failed to fetch team players for ranking: ${rankError.message}`
-        );
+        throw new Error(`Failed to fetch team ranking: ${rankError.message}`);
 
-      // Create Maps
-      const currentStatsMap = new Map(
-        currentStatsData?.map((s) => [s.pt_id, s])
-      );
+      // 3. Process Data
       const currentRankMap = new Map<string, number>();
       allTeamPlayersData?.forEach((p, index) => {
         currentRankMap.set(p.pt_id, index + 1);
       });
 
-      // Calculate final data including changes
-      const calculated: CalculatedReviewStats[] = attendeesWithStats.map(
-        (att) => {
-          const currentStats = currentStatsMap.get(att.pt_id);
-          const currentElo = currentStats?.elo ?? att.elo_before ?? 0;
-          const currentWins = currentStats?.wins ?? att.wins_before ?? 0;
-          const currentLosses = currentStats?.losses ?? att.losses_before ?? 0;
-          const currentRank = currentRankMap.get(att.pt_id) ?? null;
+      const results: CalculatedReviewStats[] = attendeesWithStats.map((att) => {
+        const playerGames = (
+          (gamePlayersData as GamePlayerData[]) ?? []
+        ).filter((gp) => gp.pt_id === att.pt_id);
+        playerGames.sort(
+          (a, b) =>
+            new Date(a.games!.match_date).getTime() -
+            new Date(b.games!.match_date).getTime()
+        ); // Ensure sorted
 
-          const beforeWins = att.wins_before ?? 0;
-          const beforeLosses = att.losses_before ?? 0;
-          const beforeElo = att.elo_before ?? 0;
+        let session_elo_before: number | null = null;
+        let session_elo_after: number | null = null;
+        let session_wins_before: number | null = null;
+        let session_wins_after: number | null = null;
+        let session_losses_before: number | null = null;
+        let session_losses_after: number | null = null;
 
-          const rankChange =
-            att.rank_before !== null && currentRank !== null
-              ? att.rank_before - currentRank
-              : null;
-          const winsChange = currentWins - beforeWins;
-          const lossesChange = currentLosses - beforeLosses;
-          const sessionGamesPlayed = winsChange + lossesChange;
-          const sessionWinPercent =
-            sessionGamesPlayed > 0
-              ? (winsChange / sessionGamesPlayed) * 100
-              : null;
-
-          const playerName =
-            currentStats?.player?.name ??
-            att.player_teams?.player?.name ??
-            "Unknown";
-
-          return {
-            ...att,
-            current_elo: currentElo,
-            current_wins: currentWins,
-            current_losses: currentLosses,
-            current_rank: currentRank,
-            eloChange: currentElo - beforeElo,
-            winsChange: winsChange, // Session Wins
-            lossesChange: lossesChange, // Session Losses
-            rankChange: rankChange,
-            sessionWinPercent: sessionWinPercent,
-            player_teams: {
-              ...(att.player_teams ?? ({} as PlayerTeamType)),
-              player: { name: playerName },
-            },
-          };
+        if (playerGames.length > 0) {
+          // Stats before first game of session
+          session_elo_before = playerGames[0].elo_before;
+          session_wins_before = playerGames[0].wins_before;
+          session_losses_before = playerGames[0].losses_before;
+          // Stats after last game of session
+          session_elo_after = playerGames[playerGames.length - 1].elo_after;
+          session_wins_after = playerGames[playerGames.length - 1].wins_after;
+          session_losses_after =
+            playerGames[playerGames.length - 1].losses_after;
+        } else {
+          // If player played no games in session, use their current stats as before/after
+          session_elo_before = att.player_teams?.elo ?? null;
+          session_elo_after = att.player_teams?.elo ?? null;
+          session_wins_before = att.player_teams?.wins ?? null;
+          session_wins_after = att.player_teams?.wins ?? null;
+          session_losses_before = att.player_teams?.losses ?? null;
+          session_losses_after = att.player_teams?.losses ?? null;
         }
-      );
-      setLiveData(calculated);
+
+        const currentRank = currentRankMap.get(att.pt_id) ?? null;
+        const rankChange =
+          att.rank_before !== null && currentRank !== null
+            ? att.rank_before - currentRank
+            : null;
+
+        const winsChange =
+          (session_wins_after ?? 0) - (session_wins_before ?? 0);
+        const lossesChange =
+          (session_losses_after ?? 0) - (session_losses_before ?? 0);
+        const sessionGamesPlayed = winsChange + lossesChange;
+        const sessionWinPercent =
+          sessionGamesPlayed > 0
+            ? (winsChange / sessionGamesPlayed) * 100
+            : null;
+
+        return {
+          ...att, // Includes pt_id, session_id, stats_before_rank, player_teams
+          session_elo_before: session_elo_before,
+          session_elo_after: session_elo_after,
+          current_rank: currentRank,
+          eloChange: (session_elo_after ?? 0) - (session_elo_before ?? 0),
+          winsChange: winsChange,
+          lossesChange: lossesChange,
+          rankChange: rankChange,
+          sessionWinPercent: sessionWinPercent,
+          player_name: att.player_teams?.player?.name ?? "Unknown", // Add player name directly
+        };
+      });
+
+      setCalculatedData(results);
     } catch (err) {
-      setError(`Failed to load current player data. ${err}`);
-      setLiveData([]);
+      console.error("Error calculating session stats:", err);
+      setError("Failed to calculate session review data.");
+      setCalculatedData([]);
     } finally {
       setLoading(false);
     }
-  }, [attendeesWithStats, teamId]);
+  }, [attendeesWithStats, teamId, sessionId]); // Include supabase if not stable globally
 
   // Fetch data on mount
   useEffect(() => {
-    fetchLiveStatsAndRank();
-  }, [fetchLiveStatsAndRank]);
-
-  const handlePlayerClick = (playerId: string) => {
-    void router.push(`/player/${playerId}`);
-  };
+    calculateSessionStats();
+  }, [calculateSessionStats]);
 
   // --- Sorting Logic ---
   const sortedData = useMemo(() => {
-    return [...liveData].sort((a, b) => {
+    return [...calculatedData].sort((a, b) => {
       let compareA: string | number | null = null;
       let compareB: string | number | null = null;
 
       switch (sortBy) {
         case "name":
-          compareA = a.player_teams?.player?.name ?? "";
-          compareB = b.player_teams?.player?.name ?? "";
+          compareA = a.player_name;
+          compareB = b.player_name;
           break;
         case "eloChange":
           compareA = a.eloChange;
@@ -207,23 +235,23 @@ const SessionReviewDisplay = ({
         case "lossesChange":
           compareA = a.lossesChange;
           compareB = b.lossesChange;
-          break; // Added
+          break;
         case "sessionWinPercent":
           compareA = a.sessionWinPercent ?? -1;
           compareB = b.sessionWinPercent ?? -1;
-          break; // Added (nulls last)
+          break;
         case "rankChange":
           compareA = a.rankChange ?? -Infinity;
           compareB = b.rankChange ?? -Infinity;
           break;
         case "finalElo":
-          compareA = a.current_elo;
-          compareB = b.current_elo;
-          break;
+          compareA = a.session_elo_after ?? 0;
+          compareB = b.session_elo_after ?? 0;
+          break; // Use session_elo_after
         case "currentRank":
           compareA = a.current_rank ?? Infinity;
           compareB = b.current_rank ?? Infinity;
-          break; // Added (nulls last)
+          break;
         default:
           return 0;
       }
@@ -236,7 +264,7 @@ const SessionReviewDisplay = ({
         comparison = compareA - compareB;
       return sortDir === "asc" ? comparison : -comparison;
     });
-  }, [liveData, sortBy, sortDir]);
+  }, [calculatedData, sortBy, sortDir]);
 
   const handleSort = (key: SortableKey) => {
     const isAsc = sortBy === key && sortDir === "asc";
@@ -346,6 +374,10 @@ const SessionReviewDisplay = ({
     return <Typography variant="body2">{percent.toFixed(1)}%</Typography>;
   };
 
+  const handlePlayerClick = (playerId: string) => {
+    void router.push(`/player/${playerId}`);
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" p={3}>
@@ -364,106 +396,95 @@ const SessionReviewDisplay = ({
   return (
     <Box px={2} pb={2}>
       <Typography variant="h5" gutterBottom fontWeight={"bold"}>
-        {isActive ? "Live Session Stats" : "Session Stats"}
+        {isActive ? "Live Stats" : "Session Stats"}
       </Typography>
       <Paper elevation={2} sx={{ overflowX: "auto" }}>
         <TableContainer component={Paper}>
           <Table size="small">
             <TableHead>
-              <TableRow sx={{ backgroundColor: headerBackgroundColor }}>
-                {/* Updated Rank Column Header */}
+              <TableRow
+                sx={{
+                  backgroundColor:
+                    theme.palette.mode === "dark" ? "grey.700" : "grey.300",
+                }}
+              >
+                {/* Headers */}
                 <TableCell sortDirection={getSortDirection("currentRank")}>
                   <TableSortLabel
+                    /* Rank */ onClick={() => handleSort("currentRank")}
                     active={sortBy === "currentRank"}
                     direction={sortBy === "currentRank" ? sortDir : "asc"}
-                    onClick={() => handleSort("currentRank")}
                     sx={{ fontWeight: "bold" }}
                   >
                     Rank
                   </TableSortLabel>
                 </TableCell>
-                <TableCell
-                  sortDirection={getSortDirection("name")}
-                  sx={{ fontWeight: "bold" }}
-                >
+                <TableCell sortDirection={getSortDirection("name")}>
                   <TableSortLabel
+                    /* Player */ onClick={() => handleSort("name")}
                     active={sortBy === "name"}
                     direction={sortBy === "name" ? sortDir : "asc"}
-                    onClick={() => handleSort("name")}
+                    sx={{ fontWeight: "bold" }}
                   >
                     Player
                   </TableSortLabel>
                 </TableCell>
-                <TableCell
-                  // align="center"
-                  sortDirection={getSortDirection("eloChange")}
-                >
+                <TableCell sortDirection={getSortDirection("eloChange")}>
                   <TableSortLabel
+                    /* ELO +/- */ onClick={() => handleSort("eloChange")}
                     active={sortBy === "eloChange"}
                     direction={sortBy === "eloChange" ? sortDir : "desc"}
-                    onClick={() => handleSort("eloChange")}
                     sx={{ fontWeight: "bold" }}
                   >
-                    +/-
+                    ELO +/-
                   </TableSortLabel>
                 </TableCell>
-                <TableCell
-                  // align="center"
-                  sortDirection={getSortDirection("finalElo")}
-                >
+                <TableCell sortDirection={getSortDirection("finalElo")}>
                   <TableSortLabel
+                    /* Current ELO */ onClick={() => handleSort("finalElo")}
                     active={sortBy === "finalElo"}
                     direction={sortBy === "finalElo" ? sortDir : "desc"}
-                    onClick={() => handleSort("finalElo")}
                     sx={{ fontWeight: "bold" }}
                   >
-                    ELO
+                    Final ELO
                   </TableSortLabel>
                 </TableCell>
-                <TableCell
-                  // align="center"
-                  sortDirection={getSortDirection("winsChange")}
-                >
+                <TableCell sortDirection={getSortDirection("winsChange")}>
                   <TableSortLabel
+                    /* Session W */ onClick={() => handleSort("winsChange")}
                     active={sortBy === "winsChange"}
                     direction={sortBy === "winsChange" ? sortDir : "desc"}
-                    onClick={() => handleSort("winsChange")}
                     sx={{ fontWeight: "bold" }}
                   >
                     W
                   </TableSortLabel>
                 </TableCell>
-                {/* Added Session Losses Header */}
-                <TableCell
-                  // align="center"
-                  sortDirection={getSortDirection("lossesChange")}
-                >
+                <TableCell sortDirection={getSortDirection("lossesChange")}>
                   <TableSortLabel
+                    /* Session L */ onClick={() => handleSort("lossesChange")}
                     active={sortBy === "lossesChange"}
                     direction={sortBy === "lossesChange" ? sortDir : "asc"}
-                    onClick={() => handleSort("lossesChange")}
                     sx={{ fontWeight: "bold" }}
                   >
                     L
                   </TableSortLabel>
                 </TableCell>
-                {/* Added Session Win % Header */}
                 <TableCell
-                  // align="center"
                   sortDirection={getSortDirection("sessionWinPercent")}
                 >
                   <TableSortLabel
+                    /* Session Win % */ onClick={() =>
+                      handleSort("sessionWinPercent")
+                    }
                     active={sortBy === "sessionWinPercent"}
                     direction={
                       sortBy === "sessionWinPercent" ? sortDir : "desc"
                     }
-                    onClick={() => handleSort("sessionWinPercent")}
                     sx={{ fontWeight: "bold" }}
                   >
                     Win%
                   </TableSortLabel>
                 </TableCell>
-                {/* Removed Rank +/-, Before Rank Headers */}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -471,17 +492,13 @@ const SessionReviewDisplay = ({
                 <TableRow
                   key={att.pt_id}
                   hover
-                  sx={{
-                    backgroundColor: rowBackgroundColor,
-                    "&:last-child td, &:last-child th": { border: 0 },
-                    "&:hover": { backgroundColor: rowHoverBackgroundColor },
-                  }}
+                  sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
                 >
                   {/* Combined Rank Cell */}
                   <TableCell>
                     <Box
                       display="flex"
-                      // alignItems="center"
+                      alignItems="center"
                       justifyContent="flex-start"
                     >
                       <Typography
@@ -494,44 +511,27 @@ const SessionReviewDisplay = ({
                       {renderRankChange(att.rankChange)}
                     </Box>
                   </TableCell>
+                  {/* Player Name Cell */}
                   <TableCell
                     component="th"
                     scope="row"
                     sx={{ cursor: "pointer" }}
-                    onClick={() =>
-                      handlePlayerClick(att.player_teams.player_id)
-                    }
+                    onClick={() => handlePlayerClick(att.pt_id)}
                   >
-                    {att.player_teams.player.name}
+                    {att.player_name}
                   </TableCell>
-                  <TableCell
-                  // align="center"
-                  >
-                    {renderEloChange(att.eloChange)}
-                  </TableCell>
-                  <TableCell
-                  // align="center"
-                  >
-                    {att.current_elo}
-                  </TableCell>
-                  <TableCell
-                  // align="center"
-                  >
-                    {att.winsChange}
-                  </TableCell>
-                  {/* Added Session Losses Cell */}
-                  <TableCell
-                  // align="center"
-                  >
-                    {att.lossesChange}
-                  </TableCell>
-                  {/* Added Session Win % Cell */}
-                  <TableCell
-                  // align="center"
-                  >
+                  {/* ELO Change */}
+                  <TableCell>{renderEloChange(att.eloChange)}</TableCell>
+                  {/* Final ELO */}
+                  <TableCell>{att.session_elo_after ?? "-"}</TableCell>
+                  {/* Session Wins */}
+                  <TableCell>{att.winsChange}</TableCell>
+                  {/* Session Losses */}
+                  <TableCell>{att.lossesChange}</TableCell>
+                  {/* Session Win % */}
+                  <TableCell>
                     {renderWinPercent(att.sessionWinPercent)}
                   </TableCell>
-                  {/* Removed Rank +/-, Before Rank Cells */}
                 </TableRow>
               ))}
             </TableBody>
@@ -542,4 +542,4 @@ const SessionReviewDisplay = ({
   );
 };
 
-export default SessionReviewDisplay;
+export default SessionStats;

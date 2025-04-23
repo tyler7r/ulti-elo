@@ -13,6 +13,7 @@ type GameHistoryProps = {
   playerTeamIds?: string[];
   gameId?: string;
   playerId?: string;
+  sessionId?: string;
 };
 
 const PAGE_SIZE = 5;
@@ -23,6 +24,7 @@ const GameHistory = ({
   playerTeamIds,
   gameId,
   playerId,
+  sessionId,
 }: GameHistoryProps) => {
   const [games, setGames] = useState<GameHistoryType[]>([]);
   const [page, setPage] = useState(1);
@@ -42,6 +44,7 @@ const GameHistory = ({
           gameId,
           page: newPage,
           limit: PAGE_SIZE,
+          sessionId: sessionId,
         });
 
         if (newGames.error) {
@@ -66,7 +69,7 @@ const GameHistory = ({
         setLoading(false);
       }
     },
-    [teamId, squadId, playerTeamIds, gameId]
+    [teamId, squadId, playerTeamIds, gameId, sessionId]
   );
 
   // ✅ Initial data fetch with a flag to prevent multiple triggers during development

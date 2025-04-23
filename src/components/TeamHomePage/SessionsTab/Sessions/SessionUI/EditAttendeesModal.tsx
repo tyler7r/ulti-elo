@@ -278,11 +278,30 @@ const EditAttendeesModal = ({
 
       // --- Handle Additions ---
       if (toAdd.length > 0) {
+        const { data: allTeamPlayersData, error: rankError } = await supabase
+          .from("player_teams")
+          .select("pt_id, elo")
+          .eq("team_id", teamId)
+          .or("wins.gt.0, losses.gt.0")
+          .order("elo", { ascending: false });
+
+        if (rankError)
+          return {
+            sessionId: sessionId,
+            error: `Failed to fetch team players for ranking: ${rankError.message}`,
+          };
+
+        const rankMap = new Map<string, number>();
+        allTeamPlayersData?.forEach((p, index) => {
+          rankMap.set(p.pt_id, index + 1);
+        });
         // 1. Insert into session_attendees
         const attendeeInserts = toAdd.map((p) => ({
           session_id: sessionId,
           pt_id: p.pt_id,
+          rank_before: rankMap.get(p.pt_id) ?? 1,
         }));
+
         const { error: attendeeInsertError } = await supabase
           .from("session_attendees")
           .insert(attendeeInserts);
