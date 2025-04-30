@@ -420,7 +420,6 @@ const CreateSquadsStep = ({
               (attendee) => attendeeAssignments[attendee.pt_id] == null
             );
       if (attendeesToAssign.length === 0) {
-        console.log("No attendees to assign.");
         return;
       }
 

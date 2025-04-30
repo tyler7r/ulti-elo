@@ -39,12 +39,14 @@ const ConfirmDeleteRoundModal = ({
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: { xs: "85%", md: "450px" }, // Style similar to Skip modal
+            maxWidth: 600,
+            maxHeight: "80vh",
+            overflow: "auto",
             bgcolor: "background.paper",
             boxShadow: 24,
-            p: 4,
+            width: { xs: "85%", md: "500px" }, // Similar width
+            p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
             borderRadius: 2,
-            // Removed scroll properties as content is short
           }}
         >
           {/* Close Icon Button */}

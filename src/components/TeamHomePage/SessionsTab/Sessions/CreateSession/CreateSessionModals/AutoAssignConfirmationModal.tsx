@@ -39,13 +39,14 @@ const AutoAssignConfirmationModal = ({
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: { xs: "85%", md: "450px" },
+            maxWidth: 600,
+            maxHeight: "80vh",
+            overflow: "auto",
             bgcolor: "background.paper",
             boxShadow: 24,
-            p: 4,
+            width: { xs: "85%", md: "500px" }, // Similar width
+            p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
             borderRadius: 2,
-            overflow: "scroll",
-            maxHeight: "80vh",
           }}
         >
           <IconButton
@@ -55,7 +56,7 @@ const AutoAssignConfirmationModal = ({
             <CloseIcon />
           </IconButton>
           <div className="flex items-center gap-0.5">
-            <Typography fontWeight={"bold"} variant="h6">
+            <Typography fontWeight={"bold"} variant="h6" color="primary">
               Confirm Auto-Assign
             </Typography>
             <Typography
@@ -73,13 +74,18 @@ const AutoAssignConfirmationModal = ({
             justifyContent="flex-end"
             gap={1}
           >
-            <Button onClick={() => onConfirm(false)} variant="contained">
+            <Button
+              onClick={() => onConfirm(false)}
+              variant="contained"
+              size="small"
+            >
               Auto-assign Unassigned Players
             </Button>
             <Button
               variant="outlined"
               color="secondary"
               onClick={() => onConfirm(true)}
+              size="small"
             >
               Overwrite All Assignments
             </Button>

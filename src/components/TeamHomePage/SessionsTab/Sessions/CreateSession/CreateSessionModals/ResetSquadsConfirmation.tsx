@@ -56,7 +56,7 @@ const ResetSquadsConfirmation = ({
             id="reset-squads-confirmation-title"
             variant="h6"
             fontWeight={"bold"}
-            gutterBottom
+            color="primary"
           >
             Confirm Attendee Change
           </Typography>

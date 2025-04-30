@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { AlertType, PlayerType } from "@/lib/types";
+import { startNewSeason } from "@/pages/api/start-season";
 import CloseIcon from "@mui/icons-material/Close";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import DeleteIcon from "@mui/icons-material/Delete"; // Import the delete icon
@@ -218,6 +219,8 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
         }
       }
 
+      await startNewSeason(team.id);
+
       setName("");
       setSelectedPlayers([]);
       setLogoFile(null);
@@ -250,13 +253,14 @@ const CreateTeam = ({ onClose, openTeamModal }: CreateTeamProps) => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: { xs: "90%", md: "500px" },
+            maxWidth: 600,
+            maxHeight: "80vh",
+            overflow: "auto",
             bgcolor: "background.paper",
             boxShadow: 24,
-            p: 4,
+            width: { xs: "90%", md: "500px" }, // Similar width
+            p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
             borderRadius: 2,
-            overflow: "scroll",
-            maxHeight: "80vh",
           }}
         >
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>

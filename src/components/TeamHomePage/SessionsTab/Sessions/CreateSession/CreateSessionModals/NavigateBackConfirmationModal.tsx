@@ -41,13 +41,14 @@ const NavigateBackConfirmationModal = ({
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: { xs: "85%", md: "450px" },
+            maxWidth: 600,
+            maxHeight: "80vh",
+            overflow: "auto",
             bgcolor: "background.paper",
             boxShadow: 24,
-            p: 4,
+            width: { xs: "85%", md: "500px" }, // Similar width
+            p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
             borderRadius: 2,
-            overflow: "scroll",
-            maxHeight: "80vh",
           }}
         >
           <IconButton
@@ -61,6 +62,7 @@ const NavigateBackConfirmationModal = ({
             variant="h6"
             component="h2"
             fontWeight={"bold"}
+            color="primary"
           >
             Confirm Navigation
           </Typography>
@@ -89,6 +91,7 @@ const NavigateBackConfirmationModal = ({
                 onClick={onSaveAndNavigateBack}
                 variant="contained"
                 color="primary"
+                size="small"
               >
                 Save & Go Back
               </Button>
@@ -105,7 +108,7 @@ const NavigateBackConfirmationModal = ({
                 onClick={onClose}
                 color="primary"
                 variant={canSave ? "outlined" : "contained"}
-                size={canSave ? "small" : "medium"}
+                size={"small"}
                 fullWidth
               >
                 Continue Working
@@ -114,7 +117,7 @@ const NavigateBackConfirmationModal = ({
                 onClick={onNavigateBackWithoutSave}
                 variant="outlined"
                 color="secondary"
-                size={canSave ? "small" : "medium"}
+                size={"small"}
                 fullWidth
               >
                 Don&rsquo;t Save & Go Back

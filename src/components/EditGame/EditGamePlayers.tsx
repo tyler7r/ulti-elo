@@ -67,9 +67,9 @@ const EditGamePlayers = ({
   };
 
   return (
-    <div className="mt-2 flex flex-col w-full">
+    <div className="flex flex-col w-full">
       <Typography
-        variant={singleGame ? "h5" : "h6"}
+        variant={singleGame ? "h5" : "body1"}
         fontWeight={"bold"}
         color={isSquadA ? "primary" : "secondary"}
       >
@@ -83,34 +83,17 @@ const EditGamePlayers = ({
             cursor: "default",
           }}
         >
-          <Table aria-label="elo change table">
+          <Table aria-label="elo change table" size="small">
             <TableHead>
               <TableRow
                 sx={{
                   backgroundColor: headerBackgroundColor,
                 }}
               >
-                <TableCell sx={{ fontWeight: "bold", padding: 1 }} align="left">
-                  Player
-                </TableCell>
-                <TableCell
-                  sx={{ fontWeight: "bold", padding: 1 }}
-                  align="center"
-                >
-                  Before
-                </TableCell>
-                <TableCell
-                  sx={{ fontWeight: "bold", padding: 1 }}
-                  align="center"
-                >
-                  Impact
-                </TableCell>
-                <TableCell
-                  sx={{ fontWeight: "bold", padding: 1 }}
-                  align="center"
-                >
-                  ELO
-                </TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Player</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Before</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Impact</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>ELO</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -141,14 +124,11 @@ const EditGamePlayers = ({
                       sx={{
                         cursor: "pointer",
                         display: "flex",
-
                         alignItems: "center",
-
                         gap: 1,
-                        padding: 1,
                       }}
                     >
-                      <div>{player.name}</div>
+                      <div className="text-nowrap">{player.name}</div>
                       <IconButton
                         edge="end"
                         aria-label="delete"
@@ -160,19 +140,13 @@ const EditGamePlayers = ({
                         <DeleteIcon fontSize="small" />
                       </IconButton>
                     </TableCell>
-                    <TableCell padding="none" align="center">
-                      {player.elo_before ?? "N/A"}
-                    </TableCell>
+                    <TableCell>{player.elo_before ?? "N/A"}</TableCell>
                     <TableCell
-                      padding="none"
-                      align="center"
                       sx={{ fontWeight: "bold", color: eloChangeColor }}
                     >
                       {eloChange > 0 ? `+${eloChange}` : eloChange}
                     </TableCell>
-                    <TableCell padding="none" align="center">
-                      {player.elo_after ?? "N/A"}
-                    </TableCell>
+                    <TableCell>{player.elo_after ?? "N/A"}</TableCell>
                   </TableRow>
                 );
               })}
@@ -181,7 +155,7 @@ const EditGamePlayers = ({
         </TableContainer>
       </Paper>
 
-      <FormControl fullWidth sx={{ marginTop: 2, marginBottom: 1 }}>
+      <FormControl fullWidth sx={{ marginTop: 2 }}>
         <Autocomplete
           size="small"
           value={selectedValue}

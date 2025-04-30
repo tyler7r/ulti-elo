@@ -292,7 +292,7 @@ const SessionAttendeesList = ({
 
   // --- Render Logic ---
   return (
-    <Box>
+    <Box p={2}>
       {/* Header & Edit/Done Buttons */}
       <Box
         display="flex"

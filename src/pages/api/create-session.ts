@@ -4,6 +4,7 @@ import {
   SquadState,
 } from "@/components/TeamHomePage/SessionsTab/Sessions/CreateSession/CreateSquads";
 import generateRoundRobinPairs from "@/lib/generateRoundRobinPairs";
+import { getActiveSeason } from "@/lib/getActiveSeason";
 import { supabase } from "@/lib/supabase";
 import {
   GameScheduleInsertType,
@@ -56,6 +57,14 @@ export const saveNewSession = async (
       };
     }
 
+    const activeSeason = await getActiveSeason(teamId);
+    if (!activeSeason.season) {
+      return {
+        sessionId: null,
+        error: "No active season found for this team.",
+      };
+    }
+
     // === 1. Create the Session ===
     const { data: sessionData, error: sessionError } = await supabase
       .from("sessions")
@@ -63,6 +72,7 @@ export const saveNewSession = async (
         title: sessionTitle,
         team_id: teamId,
         session_date: new Date().toISOString(),
+        season_id: activeSeason.season.id,
       })
       .select("id")
       .single();

@@ -41,13 +41,14 @@ const SkipConfirmationModal = ({
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: { xs: "85%", md: "450px" },
+            maxWidth: 600,
+            maxHeight: "80vh",
+            overflow: "auto",
             bgcolor: "background.paper",
             boxShadow: 24,
-            p: 4,
+            width: { xs: "85%", md: "500px" }, // Similar width
+            p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
             borderRadius: 2,
-            overflow: "scroll",
-            maxHeight: "80vh",
           }}
         >
           <IconButton
@@ -56,7 +57,12 @@ const SkipConfirmationModal = ({
           >
             <CloseIcon />
           </IconButton>
-          <Typography id="modal-title" variant="h6" fontWeight={"bold"}>
+          <Typography
+            id="modal-title"
+            variant="h6"
+            fontWeight={"bold"}
+            color="secondary"
+          >
             Confirm Skip
           </Typography>
           <Typography id="modal-description" sx={{ mt: 1 }}>
@@ -75,6 +81,7 @@ const SkipConfirmationModal = ({
               variant="contained"
               color="secondary"
               onClick={onConfirmSkip}
+              size="small"
             >
               Yes, Skip & Discard
             </Button>
@@ -83,11 +90,17 @@ const SkipConfirmationModal = ({
                 variant="contained"
                 color="primary"
                 onClick={onSaveAndSkip}
+                size="small"
               >
                 Save & Skip
               </Button>
             ) : (
-              <Button variant="outlined" color="primary" onClick={onClose}>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={onClose}
+                size="small"
+              >
                 Cancel
               </Button>
             )}

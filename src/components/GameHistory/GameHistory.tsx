@@ -2,7 +2,7 @@ import { getGameHistory } from "@/lib/getGameHistory";
 import { GameHistoryType } from "@/lib/types";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import KeyboardDoubleArrowDownIcon from "@mui/icons-material/KeyboardDoubleArrowDown";
-import { Fab, Typography } from "@mui/material";
+import { Box, Fab, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import Game from "./Game";
@@ -47,10 +47,6 @@ const GameHistory = ({
           sessionId: sessionId,
         });
 
-        if (newGames.error) {
-          console.log("Error fetching games:", newGames.error);
-        }
-
         if (newGames.history) {
           if (newGames.history.length === 0) {
             setHasMore(false);
@@ -84,41 +80,47 @@ const GameHistory = ({
 
   if (loading && games.length === 0)
     return <p className="font-bold text-lg p-4">Loading...</p>;
-  if (games.length === 0)
-    return <p className="font-bold text-lg p-4">No games found.</p>;
 
   return (
-    <div className="p-4 w-full flex flex-col">
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        padding: 2,
+        width: "100%",
+      }}
+    >
       <Typography variant="h5" fontWeight={"bold"} marginBottom={2}>
         Game History
       </Typography>
-
-      {/* ✅ Infinite Scroll Component */}
-      <InfiniteScroll
-        dataLength={games.length} // Length of the current list of games
-        next={() => fetchGames(page)} // Function to fetch more data
-        hasMore={hasMore} // Whether more data is available
-        loader={
-          <div className="flex justify-center items-center mt-2 font-bold text-sm">
-            <KeyboardDoubleArrowDownIcon fontSize="small" color="secondary" />
-            <div>Scroll for more games</div>
-            <KeyboardDoubleArrowDownIcon fontSize="small" color="secondary" />
-          </div>
-        } // Loader that appears while fetching
-        endMessage={
-          <p className="flex justify-center items-center mt-2 font-bold text-sm">
-            No more games
-          </p>
-        } // Message when no more data is available
-        scrollThreshold={0.9} // When to trigger loading more data (90% scroll)
-      >
-        <div className="grid gap-4">
-          {games.map((game) => (
-            <Game key={game.id} game={game} playerId={playerId} />
-          ))}
-        </div>
-      </InfiniteScroll>
-
+      {games.length === 0 ? (
+        <p className="font-bold px-2">No games found.</p>
+      ) : (
+        <InfiniteScroll
+          dataLength={games.length} // Length of the current list of games
+          next={() => fetchGames(page)} // Function to fetch more data
+          hasMore={hasMore} // Whether more data is available
+          loader={
+            <div className="flex justify-center items-center mt-2 font-bold text-sm">
+              <KeyboardDoubleArrowDownIcon fontSize="small" color="secondary" />
+              <div>Scroll for more games</div>
+              <KeyboardDoubleArrowDownIcon fontSize="small" color="secondary" />
+            </div>
+          } // Loader that appears while fetching
+          endMessage={
+            <p className="flex justify-center items-center mt-2 font-bold text-sm">
+              No more games
+            </p>
+          } // Message when no more data is available
+          scrollThreshold={0.9} // When to trigger loading more data (90% scroll)
+        >
+          <Box display={"flex"} flexDirection={"column"} gap={2} px={1}>
+            {games.map((game) => (
+              <Game key={game.id} game={game} playerId={playerId} />
+            ))}
+          </Box>
+        </InfiniteScroll>
+      )}
       {/* ✅ Scroll-to-Top Button */}
       <Fab
         color="primary"
@@ -134,7 +136,7 @@ const GameHistory = ({
       >
         <ArrowUpwardIcon />
       </Fab>
-    </div>
+    </Box>
   );
 };
 

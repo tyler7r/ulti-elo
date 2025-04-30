@@ -1,21 +1,19 @@
 import { supabase } from "@/lib/supabase";
+import { TeamType } from "@/lib/types";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { Box, Button, IconButton, TextField, Typography } from "@mui/material";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-
-interface Team {
-  id: string;
-  name: string;
-  logo_url: string | null;
-}
+import NoAccessPage from "./NoAccess";
 
 interface TeamSettingsTabProps {
-  team: Team | null;
+  team: TeamType;
   onTeamUpdated: () => void;
   setSnackbarMessage: (message: string) => void;
   setSnackbarOpen: (open: boolean) => void;
+  isAdmin: boolean;
+  ownerName: string | undefined;
 }
 
 const TeamSettingsTab = ({
@@ -23,6 +21,8 @@ const TeamSettingsTab = ({
   onTeamUpdated,
   setSnackbarMessage,
   setSnackbarOpen,
+  isAdmin,
+  ownerName,
 }: TeamSettingsTabProps) => {
   const [teamName, setTeamName] = useState(team?.name || "");
   const [initialTeamName, setInitialTeamName] = useState(team?.name || "");
@@ -43,6 +43,7 @@ const TeamSettingsTab = ({
   }, [team]);
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isAdmin) return;
     const file = event.target.files?.[0];
     if (file) {
       setLogoFile(file);
@@ -55,10 +56,12 @@ const TeamSettingsTab = ({
   };
 
   const handleButtonClick = () => {
+    if (!isAdmin) return;
     fileInputRef.current?.click();
   };
 
   const handleRemoveNewLogo = () => {
+    if (!isAdmin) return;
     setLogoFile(null);
     setLogoPreviewUrl(null);
     if (fileInputRef.current) {
@@ -77,6 +80,7 @@ const TeamSettingsTab = ({
     file: File,
     teamId: string
   ): Promise<string | null> => {
+    if (!isAdmin) return null;
     try {
       const fileExt = file.name.split(".").pop();
       const timestamp = Date.now();
@@ -107,7 +111,7 @@ const TeamSettingsTab = ({
   };
 
   const handleSaveSettings = async () => {
-    if (!team?.id) return;
+    if (!team?.id || !isAdmin) return;
     let hasChanges = false;
 
     // Update team name if changed
@@ -198,132 +202,137 @@ const TeamSettingsTab = ({
     setDisabled(isSaveDisabled);
   }, [isSaveDisabled]);
 
-  return (
-    <Box mt={3}>
-      <Typography variant="h6" className="mb-2">
-        Edit Team Name
+  return !isAdmin ? (
+    <NoAccessPage ownerName={ownerName} isAdmin={isAdmin} team={team} />
+  ) : (
+    <Box p={2} sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+      <Typography variant="h5" fontWeight={"bold"}>
+        Edit {team.name}
       </Typography>
-      <TextField
-        label="Team Name"
-        value={teamName}
-        onChange={(e) => setTeamName(e.target.value)}
-        fullWidth
-        margin="normal"
-      />
-
-      <Typography variant="h6" className="mt-4 mb-2">
-        Team Logo
-      </Typography>
-      {team?.logo_url && !logoPreviewUrl && !isRemovingLogo && (
-        <Box
-          mt={2}
-          mb={2}
-          style={{
-            position: "relative",
-            width: "100px",
-            height: "100px",
-            borderRadius: "50%",
-            overflow: "hidden",
-          }}
-        >
-          <Image
-            src={team.logo_url}
-            alt="Current Team Logo"
-            width={100}
-            height={100}
-            style={{ objectFit: "cover" }}
-          />
-        </Box>
-      )}
-
-      <Box display="flex" alignItems="center" gap={2} className="mb-2 mt-2">
-        <Button
-          variant="outlined"
-          component="span"
-          onClick={handleButtonClick}
-          startIcon={<CloudUploadIcon />}
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1, px: 1 }}>
+        <TextField
+          label="Team Name"
+          value={teamName}
+          onChange={(e) => setTeamName(e.target.value)}
+          fullWidth
+          margin="normal"
           size="small"
-        >
-          Choose New Logo
-        </Button>
-        <Typography variant="body2" color="textSecondary">
-          {logoFile ? logoFile.name : "No file chosen"}
-        </Typography>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleLogoChange}
-          ref={fileInputRef}
-          style={{ display: "none" }}
         />
-        {logoPreviewUrl && (
-          <IconButton onClick={handleRemoveNewLogo} size="small" color="error">
-            <DeleteIcon />
-          </IconButton>
-        )}
-      </Box>
-
-      {team?.logo_url && !logoPreviewUrl && !isRemovingLogo && (
-        <Button
-          variant="outlined"
-          color="error"
-          startIcon={<DeleteIcon />}
-          onClick={handleRemoveExistingLogo}
-          size="small"
-          className="mt-2"
-        >
-          Remove Logo
-        </Button>
-      )}
-
-      {logoPreviewUrl && (
-        <Box
-          mt={2}
-          mb={2}
-          style={{
-            position: "relative",
-            width: "100px",
-            height: "100px",
-            borderRadius: "50%",
-            overflow: "hidden",
-            border: "none",
-          }}
-        >
-          <Image
-            src={logoPreviewUrl}
-            alt="Logo Preview"
-            width={100}
-            height={100}
-            style={{ objectFit: "cover" }}
-          />
-        </Box>
-      )}
-
-      {isRemovingLogo && (
-        <Typography variant="body2" color="textSecondary" className="mt-2">
-          Logo will be removed upon saving.
+        <Typography variant="h6" fontWeight={"bold"}>
+          Team Logo
         </Typography>
-      )}
-
-      <Box mt={3} display={"flex"} gap={1}>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleSaveSettings}
-          disabled={disabled}
-          size="small"
+        {team?.logo_url && !logoPreviewUrl && !isRemovingLogo && (
+          <Box
+            sx={{
+              position: "relative",
+              width: "100px",
+              borderRadius: "4px",
+              overflow: "hidden",
+              mb: 2,
+            }}
+          >
+            <Image
+              src={team.logo_url}
+              alt="Current Team Logo"
+              width={100}
+              height={100}
+              style={{ objectFit: "cover" }}
+            />
+          </Box>
+        )}
+        <Box display="flex" alignItems="center" gap={2}>
+          <Button
+            variant="outlined"
+            component="span"
+            onClick={handleButtonClick}
+            startIcon={<CloudUploadIcon />}
+            size="small"
+            sx={{ textWrap: "nowrap" }}
+          >
+            Choose New Logo
+          </Button>
+          <Typography variant="body2" color="textSecondary">
+            {logoFile ? logoFile.name : "No file chosen"}
+          </Typography>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleLogoChange}
+            ref={fileInputRef}
+            style={{ display: "none" }}
+          />
+          {logoPreviewUrl && (
+            <IconButton
+              onClick={handleRemoveNewLogo}
+              size="small"
+              color="error"
+            >
+              <DeleteIcon />
+            </IconButton>
+          )}
+        </Box>
+        {team?.logo_url && !logoPreviewUrl && !isRemovingLogo && (
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={handleRemoveExistingLogo}
+            size="small"
+            className="mt-2"
+          >
+            Remove Logo
+          </Button>
+        )}
+        {logoPreviewUrl && (
+          <Box
+            sx={{
+              position: "relative",
+              width: "100px",
+              borderRadius: "4px",
+              overflow: "hidden",
+              mb: 2,
+            }}
+          >
+            <Image
+              src={logoPreviewUrl}
+              alt="Logo Preview"
+              width={100}
+              height={100}
+              style={{ objectFit: "cover" }}
+            />
+          </Box>
+        )}
+        {isRemovingLogo && (
+          <Typography variant="body2" color="textSecondary" className="mt-2">
+            Logo will be removed upon saving.
+          </Typography>
+        )}
+        <Box
+          mt={1}
+          display={"flex"}
+          justifyContent={"flex-end"}
+          width={"100%"}
+          gap={1}
         >
-          Save Settings
-        </Button>
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={handleRevertChanges}
-          color="secondary"
-          disabled={disabled}
-        >
-          Revert Changes
-        </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={handleRevertChanges}
+            color="secondary"
+            disabled={disabled}
+          >
+            Revert Changes
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSaveSettings}
+            disabled={disabled}
+            size="small"
+          >
+            Save Settings
+          </Button>
+        </Box>
       </Box>
     </Box>
   );

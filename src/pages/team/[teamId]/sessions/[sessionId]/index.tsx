@@ -283,7 +283,7 @@ const SessionPage = () => {
   }
 
   return (
-    <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+    <Box>
       {/* Render DetailsDisplay only if sessionMeta exists */}
       <SessionDetailsDisplay
         session={sessionMeta}
@@ -299,7 +299,7 @@ const SessionPage = () => {
         </Alert>
       )}
 
-      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
+      <Box>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}

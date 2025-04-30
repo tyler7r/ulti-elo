@@ -30,9 +30,9 @@ export async function updateElo(
     const gameType = gameData;
     let gameWeight = 1; // Default weight if game_type is not specified or recognized
 
-    if (gameType.game_weight === "heavy") {
+    if (gameType.game_weight === "competitive") {
       gameWeight = HEAVY_WEIGHT;
-    } else if (gameType.game_weight === "light") {
+    } else if (gameType.game_weight === "casual") {
       gameWeight = LIGHT_WEIGHT;
     }
 
@@ -194,24 +194,34 @@ export async function updateElo(
             })
             .eq("pt_id", p.pt_id),
           // Update game_players table with elo_before and elo_after
-          supabase
-            .from("game_players")
-            .update({
-              elo_before: p.elo,
-              elo_after: newElo,
-              mu_before: p.mu,
-              sigma_before: p.sigma,
-              wins_before: p.wins,
-              losses_before: p.losses,
-              win_streak_before: p.win_streak,
-              loss_streak_before: p.loss_streak,
-              win_percent_before: p.win_percent,
-              highest_elo_before: p.highest_elo,
-              longest_win_streak_before: p.longest_win_streak,
-              elo_change_before: p.elo_change,
-            })
-            .eq("pt_id", p.pt_id)
-            .eq("game_id", gameId),
+          supabase.from("game_players").upsert({
+            pt_id: p.pt_id,
+            is_winner: isWinner,
+            squad_id: sqA.id,
+            game_id: gameId,
+            elo_before: Number(p.elo),
+            elo_after: Number(newElo),
+            mu_before: Number(p.mu),
+            mu_after: Number(newMu),
+            sigma_after: Number(newSigma),
+            sigma_before: Number(p.sigma),
+            wins_before: Number(p.wins),
+            wins_after: Number(newStats.wins),
+            losses_before: Number(p.losses),
+            losses_after: Number(newStats.losses),
+            win_streak_before: Number(p.win_streak),
+            loss_streak_before: Number(p.loss_streak),
+            win_streak_after: Number(newStats.newWinStreak),
+            loss_streak_after: Number(newStats.newLossStreak),
+            win_percent_after: Number(newStats.newWinPercent),
+            longest_win_streak_after: Number(newStats.newLongestStreak),
+            elo_change_after: Number(eloChange),
+            highest_elo_after: Number(newHighElo),
+            win_percent_before: Number(p.win_percent),
+            highest_elo_before: Number(p.highest_elo),
+            longest_win_streak_before: Number(p.longest_win_streak),
+            elo_change_before: Number(p.elo_change),
+          }),
         ]);
       }),
       ...parsedPlayersB.map((p, i) => {
@@ -258,24 +268,34 @@ export async function updateElo(
             })
             .eq("pt_id", p.pt_id),
           // Update game_players table with elo_before and elo_after
-          supabase
-            .from("game_players")
-            .update({
-              elo_before: p.elo,
-              elo_after: newElo,
-              mu_before: p.mu,
-              sigma_before: p.sigma,
-              wins_before: p.wins,
-              losses_before: p.losses,
-              win_streak_before: p.win_streak,
-              loss_streak_before: p.loss_streak,
-              win_percent_before: p.win_percent,
-              highest_elo_before: p.highest_elo,
-              longest_win_streak_before: p.longest_win_streak,
-              elo_change_before: p.elo_change,
-            })
-            .eq("pt_id", p.pt_id)
-            .eq("game_id", gameId),
+          supabase.from("game_players").upsert({
+            pt_id: p.pt_id,
+            is_winner: isWinner,
+            squad_id: sqB.id,
+            game_id: gameId,
+            elo_before: Number(p.elo),
+            elo_after: Number(newElo),
+            mu_before: Number(p.mu),
+            mu_after: Number(newMu),
+            sigma_after: Number(newSigma),
+            sigma_before: Number(p.sigma),
+            wins_before: Number(p.wins),
+            wins_after: Number(newStats.wins),
+            losses_before: Number(p.losses),
+            losses_after: Number(newStats.losses),
+            win_streak_before: Number(p.win_streak),
+            loss_streak_before: Number(p.loss_streak),
+            win_streak_after: Number(newStats.newWinStreak),
+            loss_streak_after: Number(newStats.newLossStreak),
+            win_percent_after: Number(newStats.newWinPercent),
+            longest_win_streak_after: Number(newStats.newLongestStreak),
+            elo_change_after: Number(eloChange),
+            highest_elo_after: Number(newHighElo),
+            win_percent_before: Number(p.win_percent),
+            highest_elo_before: Number(p.highest_elo),
+            longest_win_streak_before: Number(p.longest_win_streak),
+            elo_change_before: Number(p.elo_change),
+          }),
         ]);
       }),
     ];

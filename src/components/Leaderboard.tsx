@@ -1,6 +1,7 @@
 import { getRank } from "@/lib/getRank";
 import { supabase } from "@/lib/supabase";
 import { NewPlayerType } from "@/lib/types";
+import { ArrowForward } from "@mui/icons-material";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowDropUpIcon from "@mui/icons-material/ArrowDropUp";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
@@ -8,6 +9,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import {
   Box,
+  Button,
   CircularProgress,
   IconButton,
   List,
@@ -25,11 +27,9 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import Image from "next/image";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import HotPlayers from "./HotPlayers";
-import NoLogoAvatar from "./Utils/NoLogoAvatar";
 
 interface LeaderboardProps {
   teamId?: string;
@@ -148,16 +148,25 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
   }
 
   return (
-    <div className="overflow-x-auto p-4">
+    <Box
+      sx={{
+        overflowX: "auto",
+        px: 1,
+        display: "flex",
+        flexDirection: "column",
+        gap: 1,
+        width: "100%",
+      }}
+    >
       {hotPlayers.length > 0 && <HotPlayers hotPlayers={hotPlayers} />}
-      <div className="flex items-center mb-2">
+      <Box sx={{ display: "flex", alignItems: "center" }}>
         <Typography variant="h5" sx={{ fontWeight: "bold" }}>
           {teamName ? `${teamName} Leaderboard` : "Global Leaderboard"}
         </Typography>
         <IconButton aria-label="rank-info" onClick={handleOpen}>
           <InfoOutlinedIcon />
         </IconButton>
-      </div>
+      </Box>
 
       <Modal
         open={open}
@@ -171,12 +180,13 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: "90%",
             maxWidth: 600,
+            maxHeight: "80vh",
+            overflow: "auto",
             bgcolor: "background.paper",
-            border: "1px solid #000",
             boxShadow: 24,
-            p: 4,
+            width: { xs: "90%", md: "500px" }, // Similar width
+            p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
             borderRadius: 2,
           }}
         >
@@ -190,9 +200,8 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
             id="rank-info-modal-title"
             variant="h5"
             component="h2"
-            gutterBottom
             fontWeight={"bold"}
-            color="secondary"
+            color="primary"
           >
             Rank Information
           </Typography>
@@ -224,260 +233,254 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
         </Box>
       </Modal>
 
-      <Paper
-        sx={{
-          maxWidth: "100%",
-          overflowX: "auto",
-          marginTop: 2,
-          width: "100%",
-          WebkitOverflowScrolling: "touch",
-        }}
-      >
-        <TableContainer
-          component={Paper}
-          sx={{ maxHeight: 750, minWidth: 600, width: "100%" }}
+      {players.length > 0 ? (
+        <Paper
+          sx={{
+            maxWidth: "100%",
+            overflowX: "auto",
+            width: "100%",
+            WebkitOverflowScrolling: "touch",
+          }}
         >
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell
-                  align="left"
-                  sx={{
-                    position: "sticky",
-                    left: 0,
-                    zIndex: 2,
-                    minWidth: 40,
-                    fontWeight: "bold",
-                  }}
-                >
-                  #
-                </TableCell>
-                <TableCell
-                  align="left"
-                  sx={{
-                    position: "sticky",
-                    left: 40,
-                    zIndex: 2,
-                    minWidth: 160,
-                    fontWeight: "bold",
-                  }}
-                >
-                  <TableSortLabel
-                    active={sortBy === "name"}
-                    direction={sortDirection}
-                    onClick={() => handleSort("name")}
+          <TableContainer
+            component={Paper}
+            sx={{ maxHeight: 750, width: "100%" }}
+          >
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell
+                    align="left"
+                    sx={{
+                      position: "sticky",
+                      left: 0,
+                      zIndex: 2,
+
+                      fontWeight: "bold",
+                    }}
                   >
-                    Name
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell
-                  sx={{
-                    zIndex: 1,
-                    fontWeight: "bold",
-                  }}
-                >
-                  <TableSortLabel
-                    active={sortBy === "elo"}
-                    direction={sortDirection}
-                    onClick={() => handleSort("elo")}
-                  >
-                    Elo
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell
-                  sx={{
-                    zIndex: 1,
-                    fontWeight: "bold",
-                  }}
-                >
-                  <TableSortLabel
-                    active={sortBy === "wins"}
-                    direction={sortDirection}
-                    onClick={() => handleSort("wins")}
-                  >
-                    Wins
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell
-                  sx={{
-                    zIndex: 1,
-                    fontWeight: "bold",
-                  }}
-                >
-                  <TableSortLabel
-                    active={sortBy === "losses"}
-                    direction={sortDirection}
-                    onClick={() => handleSort("losses")}
-                  >
-                    Losses
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell
-                  sx={{
-                    zIndex: 1,
-                    fontWeight: "bold",
-                  }}
-                >
-                  <TableSortLabel
-                    active={sortBy === "win_percent"}
-                    direction={sortDirection}
-                    onClick={() => handleSort("win_percent")}
-                  >
-                    Win%
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell
-                  sx={{
-                    zIndex: 1,
-                    fontWeight: "bold",
-                  }}
-                >
-                  Streak
-                </TableCell>
-                {!teamId && (
-                  <TableCell sx={{ zIndex: 1, fontWeight: "bold" }}>
-                    Team
+                    #
                   </TableCell>
-                )}
-              </TableRow>
-            </TableHead>
+                  <TableCell
+                    align="left"
+                    sx={{
+                      position: "sticky",
+                      left: 40,
+                      zIndex: 2,
 
-            <TableBody>
-              {players.map((player, index) => {
-                const rank = getRank(player.elo);
-
-                return (
-                  <TableRow
-                    key={player.pt_id + player.team_id}
-                    sx={{ cursor: "default" }}
+                      fontWeight: "bold",
+                    }}
                   >
-                    {/* Rank Column */}
-                    <TableCell
-                      sx={{
-                        position: "sticky",
-                        left: 0,
-                        zIndex: 1,
-                        background: theme.palette.background.paper,
-                        fontWeight: "bold",
-                        height: 60,
-                        minWidth: 40,
-                      }}
+                    <TableSortLabel
+                      active={sortBy === "name"}
+                      direction={sortDirection}
+                      onClick={() => handleSort("name")}
                     >
-                      {index + 1}
-                    </TableCell>
-
-                    {/* Player Column with Truncated Name */}
-                    <TableCell
-                      sx={{
-                        position: "sticky",
-                        height: 60,
-                        left: 40,
-                        zIndex: 1,
-                        background: theme.palette.background.paper,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        minWidth: 160,
-                        whiteSpace: "nowrap",
-                        overflow: "scroll",
-                        textOverflow: "ellipsis",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => handlePlayerClick(player.player_id)}
+                      Player
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      zIndex: 1,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    <TableSortLabel
+                      active={sortBy === "elo"}
+                      direction={sortDirection}
+                      onClick={() => handleSort("elo")}
                     >
-                      <span>{rank.icon}</span>
-                      <span>{player.name}</span>
-                    </TableCell>
+                      Elo
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      zIndex: 1,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    <TableSortLabel
+                      active={sortBy === "wins"}
+                      direction={sortDirection}
+                      onClick={() => handleSort("wins")}
+                    >
+                      Wins
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      zIndex: 1,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    <TableSortLabel
+                      active={sortBy === "losses"}
+                      direction={sortDirection}
+                      onClick={() => handleSort("losses")}
+                    >
+                      Losses
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      zIndex: 1,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    <TableSortLabel
+                      active={sortBy === "win_percent"}
+                      direction={sortDirection}
+                      onClick={() => handleSort("win_percent")}
+                    >
+                      Win%
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      zIndex: 1,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Streak
+                  </TableCell>
+                </TableRow>
+              </TableHead>
 
-                    {/* Elo Column */}
-                    <TableCell>
-                      <div className="flex gap-1 items-center">
-                        <Typography variant="body2">{player.elo}</Typography>
-                        <div className={`flex items-center`}>
-                          {player.elo_change > 0 ? (
-                            <ArrowDropUpIcon color="success" fontSize="small" />
-                          ) : player.elo_change < 0 ? (
-                            <ArrowDropDownIcon color="error" fontSize="small" />
-                          ) : (
-                            <ArrowRightIcon color="disabled" fontSize="small" />
-                          )}
-                          <Typography
-                            variant="body2"
-                            fontWeight={"bold"}
-                            color={
-                              player.elo_change > 0
-                                ? "success"
-                                : player.elo_change < 0
-                                ? "error"
-                                : "textDisabled"
-                            }
-                          >
-                            {player.elo_change < 0
-                              ? player.elo_change * -1
-                              : player.elo_change}
-                          </Typography>
-                        </div>
-                      </div>
-                    </TableCell>
+              <TableBody>
+                {players.map((player, index) => {
+                  const rank = getRank(player.elo);
 
-                    {/* Wins */}
-                    <TableCell>{player.wins}</TableCell>
+                  return (
+                    <TableRow
+                      key={player.pt_id + player.team_id}
+                      sx={{ cursor: "default" }}
+                    >
+                      {/* Rank Column */}
+                      <TableCell
+                        sx={{
+                          position: "sticky",
+                          left: 0,
+                          zIndex: 1,
+                          background: theme.palette.background.paper,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {index + 1}
+                      </TableCell>
 
-                    {/* Losses */}
-                    <TableCell>{player.losses}</TableCell>
+                      {/* Player Column with Truncated Name */}
+                      <TableCell
+                        sx={{
+                          position: "sticky",
+                          left: 40,
+                          zIndex: 1,
+                          background: theme.palette.background.paper,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          whiteSpace: "nowrap",
+                          overflow: "scroll",
+                          textOverflow: "ellipsis",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => handlePlayerClick(player.player_id)}
+                      >
+                        <span>{rank.icon}</span>
+                        <span>{player.name}</span>
+                      </TableCell>
 
-                    {/* Win Percent */}
-                    <TableCell>{player.win_percent}%</TableCell>
-
-                    {/* Streak */}
-                    <TableCell>
-                      {player.win_streak > 0 ? (
-                        <span className="text-green-500">
-                          W{player.win_streak}
-                        </span>
-                      ) : (
-                        <span className="text-red-500">
-                          L{player.loss_streak}
-                        </span>
-                      )}
-                    </TableCell>
-                    {!teamId &&
-                      (player.teams ? (
-                        <TableCell
-                          onClick={() =>
-                            void router.push(`/team/${player.teams?.id}`)
-                          }
-                        >
-                          {player.teams.logo_url ? (
-                            <Image
-                              src={player.teams.logo_url}
-                              alt={`${player.teams.name} Logo`}
-                              width={24}
-                              height={24}
-                              className="rounded-sm cursor-pointer"
-                              onClick={() =>
-                                void router.push(`/team/${player.teams?.id}`)
+                      {/* Elo Column */}
+                      <TableCell>
+                        <div className="flex gap-1 items-center">
+                          <Typography variant="body2">{player.elo}</Typography>
+                          <div className={`flex items-center`}>
+                            {player.elo_change > 0 ? (
+                              <ArrowDropUpIcon
+                                color="success"
+                                fontSize="small"
+                              />
+                            ) : player.elo_change < 0 ? (
+                              <ArrowDropDownIcon
+                                color="error"
+                                fontSize="small"
+                              />
+                            ) : (
+                              <ArrowRightIcon
+                                color="disabled"
+                                fontSize="small"
+                              />
+                            )}
+                            <Typography
+                              variant="body2"
+                              fontWeight={"bold"}
+                              color={
+                                player.elo_change > 0
+                                  ? "success"
+                                  : player.elo_change < 0
+                                  ? "error"
+                                  : "textDisabled"
                               }
-                            />
-                          ) : (
-                            <NoLogoAvatar
-                              size="x-small"
-                              name={player.teams.name}
-                              leaderboard={true}
-                            />
-                          )}
-                        </TableCell>
-                      ) : (
-                        <TableCell className="font-bold">N/A</TableCell>
-                      ))}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
-    </div>
+                            >
+                              {player.elo_change < 0
+                                ? player.elo_change * -1
+                                : player.elo_change}
+                            </Typography>
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      {/* Wins */}
+                      <TableCell>{player.wins}</TableCell>
+
+                      {/* Losses */}
+                      <TableCell>{player.losses}</TableCell>
+
+                      {/* Win Percent */}
+                      <TableCell>{player.win_percent}%</TableCell>
+
+                      {/* Streak */}
+                      <TableCell>
+                        {player.win_streak > 0 ? (
+                          <span className="text-green-500">
+                            W{player.win_streak}
+                          </span>
+                        ) : (
+                          <span className="text-red-500">
+                            L{player.loss_streak}
+                          </span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+      ) : (
+        <Box
+          px={1}
+          display={"flex"}
+          flexDirection={"column"}
+          gap={1}
+          justifyContent={"flex-start"}
+        >
+          <Typography fontWeight={"bold"} color={"textSecondary"}>
+            No players have competed in a game during this season!
+          </Typography>
+          {teamId && (
+            <Button
+              sx={{ alignSelf: "flex-start" }}
+              endIcon={<ArrowForward fontSize="small" />}
+              // variant="outlined"
+              onClick={() => void router.push(`/team/${teamId}?tab=sessions`)}
+            >
+              Go to Sessions
+            </Button>
+          )}
+        </Box>
+      )}
+    </Box>
   );
 };
 
