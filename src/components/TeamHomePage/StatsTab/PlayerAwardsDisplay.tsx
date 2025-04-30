@@ -190,10 +190,12 @@ const SeasonAwardsDisplay = ({
   const PlayerNameDisplay = ({
     player,
     variant = "body2",
+    offCenter,
     sx = {}, // Allow passing sx for custom styles like font size
   }: {
     player: PlayerAwardTypeWithJoin["player"];
     variant?: "body1" | "body2" | "caption" | "subtitle1" | "subtitle2";
+    offCenter?: boolean;
     sx?: object;
   }) => (
     <Typography
@@ -208,7 +210,7 @@ const SeasonAwardsDisplay = ({
         overflow: "hidden",
         textOverflow: "ellipsis",
         width: "100%",
-        textAlign: "center",
+        textAlign: offCenter ? "start" : "center",
         ...sx, // Merge custom styles
         // overflowWrap: "break-word",
       }}
@@ -416,7 +418,7 @@ const SeasonAwardsDisplay = ({
                 key={type}
                 variant="outlined" // Use outlined for less emphasis
                 sx={{
-                  p: 1.5,
+                  p: 1,
                   borderRadius: "8px", // Slightly larger radius
                   display: "flex",
                   flexDirection: "column",
@@ -434,7 +436,6 @@ const SeasonAwardsDisplay = ({
                   alignItems="center"
                   justifyContent="space-between"
                   width="100%"
-                  sx={{ minHeight: "36px" }} // Ensure consistent header height
                 >
                   <Box
                     display="flex"
@@ -471,6 +472,7 @@ const SeasonAwardsDisplay = ({
                     <PlayerNameDisplay
                       player={awardsOfType[0].player}
                       variant="body2"
+                      offCenter={true}
                     />
                   </Box>
                 )}
