@@ -296,7 +296,6 @@ const SessionSquadsDisplay = ({
       // 1. Delete Game Schedule entries for this round
       if (squadIdsToDelete.length > 0) {
         // Only delete schedule if squads existed
-        console.log(`Deleting game schedule for round ${roundToDelete}`);
         const { error: scheduleDeleteError } = await supabase
           .from("game_schedule")
           .delete()
@@ -343,7 +342,7 @@ const SessionSquadsDisplay = ({
   };
 
   return (
-    <Box>
+    <Box p={2}>
       <Box
         sx={{
           display: "flex",

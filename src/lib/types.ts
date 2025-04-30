@@ -253,12 +253,80 @@ export type SessionType = {
   created_at: string;
   updated_at: string;
   active: boolean;
+  season_id: string | null;
+};
+
+export type SeasonType = {
+  id: string;
+  team_id: string;
+  season_no: number;
+  start_date: string;
+  end_date: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PlayerTeamSeasonStats = {
+  id: string;
+  pt_id: string;
+  season_id: string;
+  team_id: string;
+  player_id: string;
+  final_elo: number;
+  final_mu: number;
+  final_sigma: number;
+  season_wins: number;
+  season_losses: number;
+  season_games_played: number;
+  season_win_percent: number; // Generated column
+  season_highest_elo: number;
+  season_longest_win_streak: number;
+  archived_at: string;
+
+  // Optional: Include joined data if needed when fetching
+  player_teams: PlayerTeamType;
+  season?: { season_no: number; start_date: string; end_date: string | null };
+};
+
+export type GamePlayerStats = {
+  pt_id: string;
+  wins_before: number;
+  wins_after: number;
+  losses_before: number;
+  losses_after: number;
+  highest_elo_after: number; // Added
+  longest_win_streak_after: number; // Added
+  games: { match_date: string } | null;
 };
 
 export interface PlayerTeam {
   player_id: string;
   players: Player;
 }
+
+export type SeasonAwardType =
+  | "highest_elo_1st"
+  | "highest_elo_2nd"
+  | "highest_elo_3rd"
+  | "most_wins"
+  | "longest_win_streak";
+
+export type PlayerAwardType = {
+  pt_id: string;
+  player_id: string;
+  team_id: string;
+  award_type: SeasonAwardType;
+  award_value: number;
+  awarded_at: string;
+  id: string;
+  season_id: string;
+};
+
+export type PlayerAwardTypeWithJoin = PlayerAwardType & {
+  season: { season_no: number };
+  player: { id: string; name: string };
+};
 
 // Add these within SessionPage.tsx or to your types file
 

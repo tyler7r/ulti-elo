@@ -278,7 +278,7 @@ const GameScheduleManager = ({
   );
 
   return (
-    <Box>
+    <Box p={2} display={"flex"} flexDirection={"column"}>
       {dndError && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {dndError}
@@ -292,13 +292,17 @@ const GameScheduleManager = ({
         const isRoundComplete = pending.length === 0 && completed.length > 0;
 
         return (
-          <Box key={`round-container-${roundNo}`} sx={{ mb: 2 }}>
+          <Box
+            key={`round-container-${roundNo}`}
+            display={"flex"}
+            flexDirection={"column"}
+            gap={1}
+          >
             <Box
               display={"flex"}
               width={"100%"}
               alignItems={"center"}
               justifyContent={"space-between"}
-              p={1}
             >
               <Typography
                 variant="h5"
@@ -316,14 +320,14 @@ const GameScheduleManager = ({
                     startIcon={<AddCircleOutlineIcon fontSize="small" />}
                     onClick={() => handleOpenAddManualGameModal(roundNo)}
                   >
-                    Add Game to Round {roundNo}
+                    Add R{roundNo} Game
                   </Button>
                 </Box>
               )}
             </Box>
             {/* Completed Games Accordion using Game.tsx */}
             {completed.length > 0 && (
-              <Accordion sx={{ mb: 2 }}>
+              <Accordion sx={{ borderRadius: "4px" }}>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                   <Typography variant="body2" fontWeight="bold">
                     Show {completed.length} Completed Game
@@ -332,11 +336,10 @@ const GameScheduleManager = ({
                 </AccordionSummary>
                 <AccordionDetails
                   sx={{
-                    p: { xs: 1, sm: 2 },
+                    p: 1,
                     display: "flex",
                     flexDirection: "column",
                     gap: 1.5,
-                    // bgcolor: "action.hover",
                   }}
                 >
                   {/* Render Game component for each completed game */}

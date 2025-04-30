@@ -52,14 +52,14 @@ const InfoModal: React.FC = () => {
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: "90%",
               maxWidth: 600,
-              maxHeight: "50vh",
+              maxHeight: "80vh",
               overflow: "auto",
               bgcolor: "background.paper",
               boxShadow: 24,
+              width: { xs: "90%", md: "500px" }, // Similar width
+              p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
               borderRadius: 2,
-              p: 3,
             }}
           >
             <Box
@@ -67,7 +67,7 @@ const InfoModal: React.FC = () => {
               justifyContent="space-between"
               alignItems="center"
             >
-              <Typography variant="h5" fontWeight="bold" color="secondary">
+              <Typography variant="h5" fontWeight="bold" color="primary">
                 How Ulti ELO works
               </Typography>
               <IconButton
@@ -85,13 +85,12 @@ const InfoModal: React.FC = () => {
               textColor="primary"
               variant="scrollable"
               scrollButtons="auto"
-              sx={{ mt: 2 }}
             >
               <Tab label="ELO Calculation" />
               <Tab label="Get started" />
             </Tabs>
 
-            <Paper elevation={0} sx={{ mt: 2, p: 2 }}>
+            <Paper elevation={0} sx={{ p: 2 }}>
               {tabIndex === 0 && (
                 <Box display="flex" flexDirection="column" gap={2}>
                   <div className="flex flex-col">

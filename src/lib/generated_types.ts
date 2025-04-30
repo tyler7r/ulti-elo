@@ -335,6 +335,151 @@ export type Database = {
           },
         ]
       }
+      player_awards: {
+        Row: {
+          award_type: Database["public"]["Enums"]["season_award_type"]
+          award_value: number
+          awarded_at: string
+          id: string
+          player_id: string
+          pt_id: string
+          season_id: string
+          team_id: string
+        }
+        Insert: {
+          award_type: Database["public"]["Enums"]["season_award_type"]
+          award_value: number
+          awarded_at?: string
+          id?: string
+          player_id: string
+          pt_id: string
+          season_id: string
+          team_id: string
+        }
+        Update: {
+          award_type?: Database["public"]["Enums"]["season_award_type"]
+          award_value?: number
+          awarded_at?: string
+          id?: string
+          player_id?: string
+          pt_id?: string
+          season_id?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_awards_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_awards_pt_id_fkey"
+            columns: ["pt_id"]
+            isOneToOne: false
+            referencedRelation: "player_teams"
+            referencedColumns: ["pt_id"]
+          },
+          {
+            foreignKeyName: "player_awards_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_awards_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_team_season_stats: {
+        Row: {
+          archived_at: string
+          final_elo: number
+          final_mu: number
+          final_sigma: number
+          id: string
+          player_id: string
+          pt_id: string
+          season_games_played: number
+          season_highest_elo: number
+          season_id: string
+          season_longest_win_streak: number
+          season_losses: number
+          season_win_percent: number | null
+          season_wins: number
+          team_id: string
+        }
+        Insert: {
+          archived_at?: string
+          final_elo: number
+          final_mu: number
+          final_sigma: number
+          id?: string
+          player_id: string
+          pt_id: string
+          season_games_played?: number
+          season_highest_elo?: number
+          season_id: string
+          season_longest_win_streak?: number
+          season_losses?: number
+          season_win_percent?: number | null
+          season_wins?: number
+          team_id: string
+        }
+        Update: {
+          archived_at?: string
+          final_elo?: number
+          final_mu?: number
+          final_sigma?: number
+          id?: string
+          player_id?: string
+          pt_id?: string
+          season_games_played?: number
+          season_highest_elo?: number
+          season_id?: string
+          season_longest_win_streak?: number
+          season_losses?: number
+          season_win_percent?: number | null
+          season_wins?: number
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_team_season_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_team_season_stats_pt_id_fkey"
+            columns: ["pt_id"]
+            isOneToOne: false
+            referencedRelation: "player_teams"
+            referencedColumns: ["pt_id"]
+          },
+          {
+            foreignKeyName: "player_team_season_stats_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_team_season_stats_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_teams: {
         Row: {
           elo: number
@@ -419,6 +564,47 @@ export type Database = {
         }
         Relationships: []
       }
+      seasons: {
+        Row: {
+          active: boolean
+          created_at: string
+          end_date: string | null
+          id: string
+          season_no: number
+          start_date: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          season_no?: number
+          start_date?: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          season_no?: number
+          start_date?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seasons_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_attendees: {
         Row: {
           created_at: string
@@ -481,6 +667,7 @@ export type Database = {
           active: boolean
           created_at: string
           id: string
+          season_id: string | null
           session_date: string
           team_id: string
           title: string
@@ -490,6 +677,7 @@ export type Database = {
           active?: boolean
           created_at?: string
           id?: string
+          season_id?: string | null
           session_date?: string
           team_id: string
           title: string
@@ -499,12 +687,20 @@ export type Database = {
           active?: boolean
           created_at?: string
           id?: string
+          season_id?: string | null
           session_date?: string
           team_id?: string
           title?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "sessions_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sessions_team_id_fkey"
             columns: ["team_id"]
@@ -683,7 +879,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      season_award_type:
+        | "highest_elo_1st"
+        | "highest_elo_2nd"
+        | "highest_elo_3rd"
+        | "most_wins"
+        | "longest_win_streak"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -798,6 +999,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      season_award_type: [
+        "highest_elo_1st",
+        "highest_elo_2nd",
+        "highest_elo_3rd",
+        "most_wins",
+        "longest_win_streak",
+      ],
+    },
   },
 } as const

@@ -33,7 +33,6 @@ export async function submitGame({
       ])
       .select("id")
       .single();
-
     if (error) throw error;
 
     const gameId = game.id;

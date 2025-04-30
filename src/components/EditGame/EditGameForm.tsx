@@ -318,6 +318,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
     const sameSquadBPlayers = initialSquadBIDs === newSquadBIDs;
     const sameSquadAScore = gameDetails?.game.squad_a_score === squadAScore;
     const sameSquadBScore = gameDetails?.game.squad_b_score === squadBScore;
+    const tiedScore = squadAScore === squadBScore;
     const hasOverlap = overlappingPlayers.length > 0;
     const isSameWeight = gameDetails?.game.game_weight === gameWeight;
 
@@ -328,7 +329,8 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
         sameSquadBScore &&
         isSameWeight) ||
       loading ||
-      hasOverlap
+      hasOverlap ||
+      tiedScore
     ) {
       setDisabled(true);
     } else {
@@ -359,12 +361,12 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
     );
 
   return (
-    <div className="w-full flex flex-col">
-      <div className="w-full flex justify-between mb-4">
-        <Typography fontWeight={"bold"} variant="body1">
+    <div className="w-full flex flex-col gap-4">
+      <div className="w-full flex flex-col gap-1">
+        <Typography fontWeight={"bold"} variant="h6">
           Edit Game
         </Typography>
-        <div className="flex gap-2 items-center justify-center">
+        <div className="flex gap-2 items-center justify-end mb-2">
           <Button
             variant="contained"
             color="primary"
@@ -397,7 +399,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
           </Button>
         </div>
       </div>
-      <div className="w-full flex gap-2 mt-2">
+      <div className="w-full flex gap-2">
         <TextField
           size="small"
           label={`${gameDetails.squadA.name} Score`}
@@ -436,7 +438,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
           singleGame={singleGame}
         />
       </div>
-      <FormControl component="fieldset" sx={{ marginBottom: 2 }}>
+      <FormControl component="fieldset">
         <div className="flex items-center">
           <FormLabel sx={{ fontWeight: "bold", paddingY: 1 }}>
             Game Weight
@@ -449,11 +451,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
             <InfoOutlinedIcon fontSize="small" />
           </IconButton>
         </div>
-        <ButtonGroup
-          aria-label="game type button group"
-          fullWidth
-          sx={{ marginTop: 1 }}
-        >
+        <ButtonGroup aria-label="game type button group" fullWidth>
           <Button
             onClick={() => handleWeightChange("casual")}
             color={gameWeight === "casual" ? "secondary" : "inherit"}
@@ -502,7 +500,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
           {alert.message}
         </Alert>
       )}
-      <div className="flex gap-2 items-center mt-4">
+      <div className="flex gap-2 items-center">
         <Button
           variant="contained"
           color="primary"

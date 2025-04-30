@@ -394,7 +394,7 @@ const SessionStats = ({
   }
 
   return (
-    <Box px={2} pb={2}>
+    <Box p={2}>
       <Typography variant="h5" gutterBottom fontWeight={"bold"}>
         {isActive ? "Live Stats" : "Session Stats"}
       </Typography>
@@ -516,7 +516,9 @@ const SessionStats = ({
                     component="th"
                     scope="row"
                     sx={{ cursor: "pointer" }}
-                    onClick={() => handlePlayerClick(att.pt_id)}
+                    onClick={() =>
+                      handlePlayerClick(att.player_teams.player_id)
+                    }
                   >
                     {att.player_name}
                   </TableCell>

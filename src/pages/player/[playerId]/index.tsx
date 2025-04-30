@@ -1,10 +1,12 @@
-import GameHistory from "@/components/GameHistory/GameHistory";
-import PlayerTeamStats from "@/components/PlayerHomePage/PlayerTeamStats"; // Import the new component
-import { supabase } from "@/lib/supabase";
-import { AlertType, PlayerTeamsType, PlayerType } from "@/lib/types";
-// import WhatshotIcon from "@mui/icons-material/Whatshot"; // Import a hot icon
+import { supabase } from "@/lib/supabase"; // Adjust path
+import {
+  PlayerTeamSeasonStats,
+  PlayerTeamsType,
+  PlayerTeamType,
+  PlayerType,
+  TeamType,
+} from "@/lib/types"; // Adjust path
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
-import WhatshotIcon from "@mui/icons-material/Whatshot";
 import {
   Alert,
   Box,
@@ -16,7 +18,23 @@ import {
   useTheme,
 } from "@mui/material";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useState } from "react"; // Assuming you have your Supabase client set up her
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+// Import child components
+import GameHistory from "@/components/GameHistory/GameHistory"; // Adjust path
+import PlayerTeamStats from "@/components/PlayerHomePage/PlayerTeamStats"; // Adjust path
+import WhatshotIcon from "@mui/icons-material/Whatshot"; // Import a hot icon
+
+// Define type for Awards (can be moved to types file)
+// type PlayerAward = {
+//   id: string;
+//   pt_id: string; // Awards might be linked to player_teams (pt_id) instead of player_id directly
+//   player_id: string; // Or directly to player_id
+//   season_id: string;
+//   award_type: "highest_elo" | "most_wins" | "longest_streak"; // Add more types later
+//   award_value?: string | number;
+//   awarded_at: string;
+//   season?: { season_no: number }; // Optional joined data
+// };
 
 function a11yProps(index: number) {
   return {
@@ -28,114 +46,135 @@ function a11yProps(index: number) {
 const PlayerHomePage = () => {
   const router = useRouter();
   const playerId = router.query.playerId as string;
-  const [activeTab, setActiveTab] = useState(0); // Default to Stats & Teams
+
+  const [activeTab, setActiveTab] = useState(0);
   const [playerData, setPlayerData] = useState<PlayerType | null>(null);
-  const [playerTeamsData, setPlayerTeamsData] = useState<PlayerTeamsType[]>([]);
+  const [currentTeamsData, setCurrentTeamsData] = useState<PlayerTeamsType[]>(
+    []
+  );
+  const [seasonHistoryData, setSeasonHistoryData] = useState<
+    PlayerTeamSeasonStats[]
+  >([]);
+  // const [awards, setAwards] = useState<PlayerAward[]>([]);
   const [loading, setLoading] = useState(true);
-  const [alert, setAlert] = useState<AlertType>({
-    message: null,
-    severity: "error",
-  });
+  const [alert, setAlert] = useState<string | null>(null);
   const [openTeamId, setOpenTeamId] = useState<string | null>(null);
 
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
-  // Calculate headline stats
-  const totalWins = playerTeamsData.reduce(
-    (sum, teamData) => sum + teamData.player.wins,
-    0
-  );
-  const totalLosses = playerTeamsData.reduce(
-    (sum, teamData) => sum + teamData.player.losses,
-    0
-  );
-  const winPercentage =
-    totalWins + totalLosses > 0
-      ? ((totalWins / (totalWins + totalLosses)) * 100).toFixed(2)
-      : "N/A";
-  // const currentElos = playerTeamsData.map((teamData) => teamData.player.elo);
-  const highestElo = playerTeamsData.reduce(
-    (max, teamData) => Math.max(max, teamData.player.highest_elo),
-    0
-  );
-  const longestWinStreak = playerTeamsData.reduce(
-    (max, teamData) => Math.max(max, teamData.player.longest_win_streak),
-    0
-  );
-
+  // --- Data Fetching (Awaiting individually) ---
   const fetchPlayerData = useCallback(async (id: string) => {
     setLoading(true);
-    setAlert({ message: null, severity: "error" });
-
+    setAlert(null);
     try {
-      // Fetch player details (including potential avatar URL)
-      const { data: player, error: playerError } = await supabase
+      // Fetch player details first (required for name)
+      const playerRes = await supabase
         .from("players")
         .select("*")
         .eq("id", id)
         .single();
+      if (playerRes.error) throw playerRes.error;
+      if (!playerRes.data) throw new Error("Player not found");
+      const fetchedPlayerData = playerRes.data;
+      setPlayerData(fetchedPlayerData); // Set player data early
 
-      if (playerError) {
-        throw playerError;
-      }
-
-      // Fetch player_team IDs and associated team data
-      const { data: playerTeams, error: playerTeamsError } = await supabase
+      // Fetch current team associations
+      const currentTeamsRes = await supabase
         .from("player_teams")
         .select("*, teams!inner(*)")
         .eq("player_id", id)
         .order("last_updated", { ascending: false });
-
-      if (playerTeamsError) {
-        throw playerTeamsError;
-      }
-
-      const formattedPlayerTeams = playerTeams.map((pt) => ({
+      if (currentTeamsRes.error) throw currentTeamsRes.error;
+      const formattedCurrentTeams = (currentTeamsRes.data ?? []).map((pt) => ({
         player: {
-          elo: pt.elo,
-          elo_change: pt.elo_change,
-          highest_elo: pt.highest_elo,
-          pt_id: pt.pt_id,
-          team_id: pt.team_id,
-          wins: pt.wins,
-          losses: pt.losses,
-          win_streak: pt.win_streak,
-          loss_streak: pt.loss_streak,
-          longest_win_streak: pt.longest_win_streak,
-          win_percent: pt.win_percent,
-          player_id: pt.player_id,
-          mu: pt.mu,
-          last_updated: pt.last_updated,
-          player: { name: player.name },
-          sigma: pt.sigma,
-        },
-        team: { ...pt.teams },
+          ...pt,
+          player: { name: fetchedPlayerData.name }, // Use fetched name
+        } as PlayerTeamType,
+        team: { ...pt.teams } as TeamType,
       }));
+      setCurrentTeamsData(formattedCurrentTeams);
 
-      setPlayerData(player);
-      setPlayerTeamsData(formattedPlayerTeams);
-      setLoading(false);
+      // Fetch season history
+      const seasonHistoryRes = await supabase
+        .from("player_team_season_stats")
+        .select("*, season:seasons(season_no)")
+        .eq("player_id", id);
+      if (seasonHistoryRes.error) throw seasonHistoryRes.error;
+      setSeasonHistoryData(
+        (seasonHistoryRes.data as PlayerTeamSeasonStats[]) ?? []
+      );
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching player page data:", err);
+      setAlert("Failed to load player data.");
+      setPlayerData(null); // Clear data on error
+      setCurrentTeamsData([]);
+      setSeasonHistoryData([]);
+      // setAwards([]);
+    } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // No dependencies needed if only run once based on playerId
 
   useEffect(() => {
     if (playerId) {
       fetchPlayerData(playerId);
+    } else {
+      setLoading(false);
     }
-  }, [fetchPlayerData, playerId]);
+  }, [playerId, fetchPlayerData]);
 
   useEffect(() => {
-    if (playerTeamsData.length > 0) {
-      setOpenTeamId(playerTeamsData[0].player.pt_id);
+    if (currentTeamsData.length > 0) {
+      setOpenTeamId(currentTeamsData[0].player.pt_id);
     } else {
       setOpenTeamId(null); // Reset if no teams
     }
-  }, [playerTeamsData]);
+  }, [currentTeamsData]);
 
+  // --- Calculate Overall Stats ---
+  const overallStats = useMemo(() => {
+    // ... (calculation logic remains the same) ...
+    let totalWins = 0;
+    let totalLosses = 0;
+    let peakElo = 0;
+    let longestStreak = 0;
+    seasonHistoryData.forEach((seasonStat) => {
+      totalWins += seasonStat.season_wins ?? 0;
+      totalLosses += seasonStat.season_losses ?? 0;
+      peakElo = Math.max(peakElo, seasonStat.season_highest_elo ?? 0);
+      longestStreak = Math.max(
+        longestStreak,
+        seasonStat.season_longest_win_streak ?? 0
+      );
+    });
+    currentTeamsData.forEach((teamData) => {
+      totalWins += teamData.player.wins ?? 0;
+      totalLosses += teamData.player.losses ?? 0;
+      peakElo = Math.max(peakElo, teamData.player.highest_elo ?? 0);
+      longestStreak = Math.max(
+        longestStreak,
+        teamData.player.longest_win_streak ?? 0
+      );
+    });
+    const winPercentage =
+      totalWins + totalLosses > 0
+        ? ((totalWins / (totalWins + totalLosses)) * 100).toFixed(1)
+        : "0.0";
+    return { totalWins, totalLosses, winPercentage, peakElo, longestStreak };
+  }, [currentTeamsData, seasonHistoryData]);
+
+  // // --- Award Calculation ---
+  // const awardCounts = useMemo(() => {
+  //   // ... (calculation logic remains the same) ...
+  //   const counts: { [key in PlayerAward["award_type"]]?: number } = {};
+  //   awards.forEach((award) => {
+  //     counts[award.award_type] = (counts[award.award_type] ?? 0) + 1;
+  //   });
+  //   return counts;
+  // }, [awards]);
+
+  // --- Handlers ---
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
@@ -148,10 +187,10 @@ const PlayerHomePage = () => {
     return <div className="p-4 text-lg font-bold">Loading player data...</div>;
   }
 
-  if (alert.message) {
+  if (alert) {
     return (
-      <Alert severity={alert.severity} sx={{ padding: 4, width: "100%" }}>
-        {alert.message}
+      <Alert severity={"error"} sx={{ padding: 4, width: "100%" }}>
+        {alert}
       </Alert>
     );
   }
@@ -162,29 +201,37 @@ const PlayerHomePage = () => {
 
   return (
     <Box sx={{ width: "100%" }}>
-      <div className="flex w-full items-center justify-center mt-4 gap-2 text-center">
-        <Typography
-          variant={isSmallScreen ? "h3" : "h2"}
-          fontWeight={"bold"}
-          sx={{ textAlign: "center" }}
-        >
+      <Box
+        display={"flex"}
+        flexDirection={"column"}
+        p={1}
+        px={2}
+        pt={2}
+        justifyContent={"center"}
+        gap={1}
+      >
+        <Typography variant={isSmallScreen ? "h4" : "h3"} fontWeight={"bold"}>
           {playerData.name}
         </Typography>
-      </div>
+      </Box>
+
+      {/* Tabs */}
       <Tabs
         value={activeTab}
         onChange={handleTabChange}
         aria-label="player tabs"
-        variant="fullWidth"
-        sx={{ mt: 2 }}
+        variant="scrollable"
+        scrollButtons="auto"
       >
         <Tab label="Stats & Teams" {...a11yProps(0)} />
         <Tab label="Game History" {...a11yProps(1)} />
       </Tabs>
 
+      {/* Tab Content */}
       <Box>
         {activeTab === 0 && (
-          <div className="rounded p-4 mt-4 flex flex-col">
+          <Box display="flex" flexDirection="column" gap={1} p={2}>
+            {/* Overall Stats Card */}
             <Paper
               sx={{
                 borderColor: theme.palette.divider,
@@ -212,7 +259,7 @@ const PlayerHomePage = () => {
                   fontSize={"20px"}
                   fontWeight="bold"
                 >
-                  Overall Stats
+                  Career Stats
                 </Typography>
               </Box>
               <Box
@@ -235,7 +282,7 @@ const PlayerHomePage = () => {
                   </Typography>
                   <Box>
                     <Typography variant="h5" fontWeight="bold">
-                      {highestElo}
+                      {overallStats.peakElo}
                     </Typography>
                     <EmojiEventsIcon color="warning" />
                   </Box>
@@ -251,7 +298,7 @@ const PlayerHomePage = () => {
                     Total Win/Loss
                   </Typography>
                   <Typography variant={"h4"} fontWeight="bold">
-                    {totalWins} - {totalLosses}
+                    {overallStats.totalWins} - {overallStats.totalLosses}
                   </Typography>
                   <Typography
                     color="textSecondary"
@@ -259,7 +306,7 @@ const PlayerHomePage = () => {
                     fontWeight={"bold"}
                     fontStyle={"italic"}
                   >
-                    {winPercentage}%
+                    {overallStats.winPercentage}%
                   </Typography>
                 </Box>
                 <Box
@@ -274,7 +321,7 @@ const PlayerHomePage = () => {
                   </Typography>
                   <Box>
                     <Typography variant="h5" fontWeight="bold">
-                      {longestWinStreak}
+                      {overallStats.longestStreak}
                     </Typography>
                     <WhatshotIcon color="warning" />
                   </Box>
@@ -282,26 +329,33 @@ const PlayerHomePage = () => {
               </Box>
             </Paper>
 
-            <Typography variant="h6" gutterBottom fontWeight={"bold"}>
+            {/* Team Specific Stats */}
+            <Typography variant="h6" fontWeight={"bold"}>
               Team Stats
             </Typography>
-            {playerTeamsData.map((teamData) => (
-              <PlayerTeamStats
-                key={teamData.team.id}
-                teamData={teamData}
-                openTeamId={openTeamId}
-                onTeamOpen={handleTeamOpen}
-              />
-            ))}
-            {playerTeamsData.length === 0 && (
-              <Typography>This player is not currently on any team.</Typography>
+            {currentTeamsData.length === 0 ? (
+              <Typography sx={{ fontStyle: "italic", textAlign: "center" }}>
+                This player is not currently on any team.
+              </Typography>
+            ) : (
+              currentTeamsData.map((teamData) => (
+                <PlayerTeamStats
+                  key={teamData.player.pt_id}
+                  currentTeamData={teamData}
+                  ptId={teamData.player.pt_id}
+                  teamId={teamData.team.id}
+                  openTeamId={openTeamId}
+                  onTeamOpen={handleTeamOpen}
+                />
+              ))
             )}
-          </div>
+          </Box>
         )}
 
+        {/* Game History Tab */}
         {activeTab === 1 && (
           <GameHistory
-            playerTeamIds={playerTeamsData.map((pt) => pt.player.pt_id)}
+            playerTeamIds={currentTeamsData.map((pt) => pt.player.pt_id)}
             playerId={playerId}
           />
         )}

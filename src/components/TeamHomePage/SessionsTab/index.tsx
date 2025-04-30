@@ -147,15 +147,21 @@ const SessionsTab = ({ team }: SessionTabProps) => {
   // --- Render Logic ---
   // Updated Active Session Renderer
   const renderActiveSession = () => (
-    <Box display={"flex"} width={"100%"} flexDirection={"column"} gap={1}>
+    <Box
+      display={"flex"}
+      width={"100%"}
+      flexDirection={"column"}
+      gap={1}
+      mt={1}
+    >
       <Box display={"flex"} width={"100%"} alignItems={"center"} gap={1}>
         <Box
-          height={20}
-          width={20}
+          height={15}
+          width={15}
           borderRadius={"50%"}
           sx={{ backgroundColor: theme.palette.error.main }}
         />
-        <Typography variant="h5" fontWeight={"bold"}>
+        <Typography variant="h6" fontWeight={"bold"}>
           Active Session
         </Typography>
       </Box>
@@ -163,19 +169,18 @@ const SessionsTab = ({ team }: SessionTabProps) => {
         elevation={2}
         onClick={() => handleNavigateToSession(activeSession!.id)} // Added onClick handler
         sx={{
-          p: 2,
-          mb: 2,
+          p: 1.5,
           border: `2px solid ${theme.palette.error.main}`,
           cursor: "pointer", // Keep cursor pointer
           transition: "box-shadow 0.3s ease-in-out",
           "&:hover": {
-            boxShadow: theme.shadows[8],
+            boxShadow: theme.shadows[6],
           },
         }}
       >
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
-            <Typography variant="h6" component="div" fontWeight={"bold"}>
+            <Typography variant="body1" component="div" fontWeight={"bold"}>
               {activeSession!.title}
             </Typography>
             <Typography
@@ -185,7 +190,7 @@ const SessionsTab = ({ team }: SessionTabProps) => {
               fontWeight={"bold"}
             >
               Started:{" "}
-              {formatDistanceToNow(new Date(activeSession!.session_date), {
+              {formatDistanceToNow(new Date(activeSession!.created_at), {
                 addSuffix: true,
               })}
             </Typography>
@@ -209,8 +214,7 @@ const SessionsTab = ({ team }: SessionTabProps) => {
         cursor: "pointer",
         transition: "box-shadow 0.2s ease-in-out",
         "&:hover": {
-          boxShadow: theme.shadows[2],
-          borderColor: theme.palette.action.active,
+          boxShadow: theme.shadows[3],
         },
       }}
     >
@@ -240,7 +244,6 @@ const SessionsTab = ({ team }: SessionTabProps) => {
         width={"100%"}
         alignItems={"center"}
         justifyContent={"space-between"}
-        mb={1}
       >
         <Typography variant="h5" fontWeight={"bold"}>
           {team.name} Sessions
@@ -284,7 +287,7 @@ const SessionsTab = ({ team }: SessionTabProps) => {
         <Typography
           variant="h6"
           sx={{ fontWeight: "bold" }}
-          mb={1}
+          my={1}
           color="primary"
         >
           Session History

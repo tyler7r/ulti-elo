@@ -1,6 +1,7 @@
 // /components/Session/EditAttendeesModal.tsx
 import { supabase } from "@/lib/supabase";
 import { PlayerTeamType, SquadType } from "@/lib/types";
+import CloseIcon from "@mui/icons-material/Close";
 import {
   Alert,
   Autocomplete,
@@ -8,13 +9,9 @@ import {
   Box,
   Button,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   Fade,
   FormControlLabel,
+  IconButton,
   List,
   ListItem,
   ListItemText,
@@ -45,13 +42,14 @@ const style = {
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: { xs: "95%", sm: 600 }, // Wider modal
+  maxWidth: 600,
+  maxHeight: "80vh",
+  overflow: "auto",
   bgcolor: "background.paper",
   boxShadow: 24,
-  p: 4,
+  width: { xs: "90%", md: "500px" }, // Similar width
+  p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
   borderRadius: 2,
-  maxHeight: "90vh",
-  overflowY: "auto",
 };
 
 // Step definitions for the modal flow when adding players
@@ -524,18 +522,46 @@ const EditAttendeesModal = ({
       </Modal>
 
       {/* Confirmation Dialog for Removing Players */}
-      <Dialog
+      <Modal
         open={isConfirmRemoveOpen}
-        onClose={handleCancelRemove} // Prevent closing by clicking outside
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
+        onClose={handleCancelRemove}
+        aria-labelledby="rank-info-modal-title"
+        aria-describedby="rank-info-modal-description"
       >
-        <DialogTitle id="alert-dialog-title">
-          Confirm Attendee Removal
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            You are about to remove the following player(s):
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            maxWidth: 600,
+            maxHeight: "80vh",
+            overflow: "auto",
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            width: { xs: "90%", md: "500px" }, // Similar width
+            p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
+            borderRadius: 2,
+          }}
+        >
+          <IconButton
+            onClick={handleCancelRemove}
+            sx={{ position: "absolute", top: 10, right: 10 }}
+          >
+            <CloseIcon />
+          </IconButton>
+          <Typography
+            id="rank-info-modal-title"
+            variant="h5"
+            component="h2"
+            fontWeight={"bold"}
+            color="error"
+            mb={1}
+          >
+            Confirm Attendee Removal
+          </Typography>
+          <Box>
+            You are about to remove the following player(s) :
             <List dense>
               {attendeesToRemove.map((p) => (
                 <ListItem key={p.pt_id}>
@@ -546,15 +572,35 @@ const EditAttendeesModal = ({
             Removing them will also remove them from **all squads** they are
             currently assigned to within this session. Are you sure you want to
             proceed?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelRemove}>Cancel</Button>
-          <Button onClick={handleConfirmRemove} color="error" autoFocus>
-            Confirm Removal
-          </Button>
-        </DialogActions>
-      </Dialog>
+          </Box>
+          <Box
+            display={"flex"}
+            width={"100%"}
+            justifyContent={"flex-end"}
+            gap={1}
+            mt={2}
+            alignItems={"center"}
+          >
+            <Button
+              onClick={handleCancelRemove}
+              color="primary"
+              variant="outlined"
+              size="small"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmRemove}
+              color="error"
+              variant="contained"
+              size="small"
+              autoFocus
+            >
+              Remove
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
     </>
   );
 };

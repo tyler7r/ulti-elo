@@ -1,16 +1,15 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { AlertType } from "@/lib/types";
+import CloseIcon from "@mui/icons-material/Close";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import {
   Alert,
+  Box,
   Button,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   IconButton,
+  Modal,
   TextField,
   Typography,
 } from "@mui/material";
@@ -185,55 +184,99 @@ const Login = () => {
           </Typography>
         </form>
       </div>
-      <Dialog
+      <Modal
         open={forgotPasswordDialog}
         onClose={() => setForgotPasswordDialog(false)}
-        fullWidth
+        aria-labelledby="rank-info-modal-title"
+        aria-describedby="rank-info-modal-description"
       >
-        <DialogTitle sx={{ fontWeight: "bold" }}>Forgot Password</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            label="Enter your email"
-            type="email"
-            variant="outlined"
-            value={forgotEmail}
-            onChange={(e) => setForgotEmail(e.target.value)}
-            required
-            sx={{ marginTop: "8px" }}
-          />
-
-          {forgotPasswordMessage && (
-            <Alert
-              severity={
-                forgotPasswordMessage.includes("success") ? "success" : "error"
-              }
-            >
-              {forgotPasswordMessage}
-            </Alert>
-          )}
-        </DialogContent>
-
-        <DialogActions>
-          <Button
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            maxWidth: 600,
+            maxHeight: "80vh",
+            overflow: "auto",
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            width: { xs: "90%", md: "500px" }, // Similar width
+            p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
+            borderRadius: 2,
+          }}
+        >
+          <IconButton
             onClick={() => setForgotPasswordDialog(false)}
+            sx={{ position: "absolute", top: 10, right: 10 }}
+          >
+            <CloseIcon />
+          </IconButton>
+          <Typography
+            id="rank-info-modal-title"
+            variant="h5"
+            component="h2"
+            fontWeight={"bold"}
             color="primary"
+            mb={1}
           >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleForgotPassword}
-            color="secondary"
-            disabled={forgotPasswordLoading}
-          >
-            {forgotPasswordLoading ? (
-              <CircularProgress size={20} />
-            ) : (
-              "Send Reset Email"
+            Forgot Password
+          </Typography>
+          <Box>
+            <TextField
+              fullWidth
+              label="Enter your email"
+              type="email"
+              variant="outlined"
+              value={forgotEmail}
+              onChange={(e) => setForgotEmail(e.target.value)}
+              required
+              sx={{ marginTop: "8px" }}
+            />
+            {forgotPasswordMessage && (
+              <Alert
+                severity={
+                  forgotPasswordMessage.includes("success")
+                    ? "success"
+                    : "error"
+                }
+              >
+                {forgotPasswordMessage}
+              </Alert>
             )}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          </Box>
+          <Box
+            display={"flex"}
+            width={"100%"}
+            justifyContent={"flex-end"}
+            gap={1}
+            mt={2}
+            alignItems={"center"}
+          >
+            <Button
+              onClick={() => setForgotPasswordDialog(false)}
+              color="secondary"
+              variant="outlined"
+              size="small"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleForgotPassword}
+              color="primary"
+              variant="contained"
+              disabled={forgotPasswordLoading}
+              size="small"
+            >
+              {forgotPasswordLoading ? (
+                <CircularProgress size={20} />
+              ) : (
+                "Send Reset Email"
+              )}
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
     </div>
   );
 };

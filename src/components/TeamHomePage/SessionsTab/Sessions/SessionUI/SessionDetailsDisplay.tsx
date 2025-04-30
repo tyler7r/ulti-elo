@@ -145,7 +145,7 @@ const SessionDetailsDisplay = ({
   };
 
   return (
-    <Box p={1} width={"100%"}>
+    <Box p={1} px={2} width={"100%"}>
       <Typography variant="h4" component="h1" gutterBottom fontWeight={"bold"}>
         {session.title}
       </Typography>

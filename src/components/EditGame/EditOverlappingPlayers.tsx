@@ -10,7 +10,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Typography,
   useTheme,
 } from "@mui/material";
 
@@ -78,14 +77,13 @@ const EditOverlappingPlayers = ({
           cursor: "default",
         }}
       >
-        <Table stickyHeader>
+        <Table stickyHeader size="small">
           <TableHead>
             <TableRow>
               <TableCell
                 sx={{
                   backgroundColor: headerBackgroundColor,
                   fontWeight: "bold",
-                  padding: 1,
                 }}
               >
                 Player
@@ -94,37 +92,29 @@ const EditOverlappingPlayers = ({
                 sx={{
                   backgroundColor: headerBackgroundColor,
                   fontWeight: "bold",
-                  padding: 1,
                 }}
+                align="center"
               >
-                <div className="flex w-full items-center gap-2">
-                  <Box
-                    height={20}
-                    width={20}
-                    sx={{ backgroundColor: theme.palette.primary.main }}
-                  />
-                  <Typography fontWeight={"bold"} variant="body1">
-                    {squadA.name}
-                  </Typography>
-                </div>
+                <Box
+                  height={20}
+                  width={20}
+                  sx={{
+                    backgroundColor: theme.palette.primary.main,
+                  }}
+                />
               </TableCell>
               <TableCell
                 sx={{
                   backgroundColor: headerBackgroundColor,
                   fontWeight: "bold",
-                  padding: 1,
                 }}
+                align="center"
               >
-                <div className="flex w-full items-center gap-2">
-                  <Box
-                    height={20}
-                    width={20}
-                    sx={{ backgroundColor: theme.palette.secondary.main }}
-                  />
-                  <Typography fontWeight={"bold"} variant="body1">
-                    {squadB.name}
-                  </Typography>
-                </div>
+                <Box
+                  height={20}
+                  width={20}
+                  sx={{ backgroundColor: theme.palette.secondary.main }}
+                />
               </TableCell>
             </TableRow>
           </TableHead>

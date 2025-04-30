@@ -200,7 +200,7 @@ const CreateSessionModal = ({
         return (
           <>
             <Typography variant="h6" fontWeight={"bold"} fontStyle={"italic"}>
-              Create New Session
+              Session Details
             </Typography>
             <TextField
               fullWidth
@@ -261,13 +261,14 @@ const CreateSessionModal = ({
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: { xs: "90%", md: "50%" },
+            maxWidth: 600,
+            maxHeight: "80vh",
+            overflow: "auto",
             bgcolor: "background.paper",
             boxShadow: 24,
-            p: 4,
+            width: { xs: "90%", md: "500px" }, // Similar width
+            p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
             borderRadius: 2,
-            overflow: "scroll",
-            maxHeight: "80vh",
           }}
         >
           <Stepper activeStep={activeStep} alternativeLabel>

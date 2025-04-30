@@ -11,6 +11,8 @@ import {
   MenuItem,
   Toolbar,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
@@ -33,6 +35,8 @@ const Header = ({ toggleTheme, isDarkMode }: HeaderProps) => {
   const [openLogin, setOpenLogin] = useState(false);
   const open = Boolean(anchorEl);
   const router = useRouter();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -128,9 +132,15 @@ const Header = ({ toggleTheme, isDarkMode }: HeaderProps) => {
             </Box>
             <IconButton onClick={toggleTheme} size="small">
               {isDarkMode ? (
-                <LightModeIcon color="primary" fontSize="large" />
+                <LightModeIcon
+                  color="primary"
+                  fontSize={isMobile ? "medium" : "large"}
+                />
               ) : (
-                <DarkModeIcon color="primary" fontSize="large" />
+                <DarkModeIcon
+                  color="primary"
+                  fontSize={isMobile ? "medium" : "large"}
+                />
               )}
             </IconButton>
             <Button

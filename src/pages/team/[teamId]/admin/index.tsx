@@ -1,8 +1,11 @@
 import PendingRequestsTab from "@/components/TeamHomePage/AdminTab/PendingRequests";
 import TeamPlayersTab from "@/components/TeamHomePage/AdminTab/TeamPlayers";
+import TeamSeasonsManager from "@/components/TeamHomePage/AdminTab/TeamSeasons";
 import TeamSettingsTab from "@/components/TeamHomePage/AdminTab/TeamSettings";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import EventAvailableIcon from "@mui/icons-material/EventAvailable"; // Icon for active season
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -10,6 +13,7 @@ import {
   Alert,
   Badge,
   Box,
+  Button,
   CircularProgress,
   IconButton,
   Snackbar,
@@ -48,6 +52,7 @@ interface Team {
 }
 
 const AdminPage = () => {
+  const { userRoles } = useAuth();
   const router = useRouter();
   const teamId = router.query.teamId as string;
   const [activeTab, setActiveTab] = useState(0);
@@ -57,6 +62,9 @@ const AdminPage = () => {
   const [loading, setLoading] = useState(true);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [ownerName, setOwnerName] = useState<string | undefined>(undefined);
+  const userRole = userRoles.find((role) => role.team_id === teamId);
+  const isAdmin = userRole ? true : false;
 
   const fetchTeamData = useCallback(async () => {
     if (!teamId) return;
@@ -64,9 +72,13 @@ const AdminPage = () => {
 
     const { data: teamData, error: teamError } = await supabase
       .from("teams")
-      .select("*")
+      .select("*, users!teams_owner_id_fkey(name)")
       .eq("id", teamId)
       .single();
+    setTeam(teamData);
+    if (teamData?.users?.name) {
+      setOwnerName(teamData.users.name);
+    }
 
     if (teamError) {
       console.error("Error fetching team data:", teamError.message);
@@ -175,13 +187,19 @@ const AdminPage = () => {
   }
 
   return (
-    <Box className="p-4">
-      <IconButton onClick={() => router.push(`/team/${teamId}`)}>
-        <ArrowBackIcon />
-      </IconButton>
-      <Typography variant="h4" fontWeight="bold" className="mb-4">
-        {team.name} Admin
-      </Typography>
+    <Box>
+      <Box sx={{ px: 2, mt: 1 }}>
+        <Button
+          onClick={() => router.push(`/team/${teamId}`)}
+          size="small"
+          startIcon={<ArrowBackIcon />}
+        >
+          {/* <ArrowBackIcon /> */}Back
+        </Button>
+        <Typography variant="h4" fontWeight="bold" className="mb-4">
+          {team.name} Admin
+        </Typography>
+      </Box>
 
       <Tabs
         value={activeTab}
@@ -190,46 +208,61 @@ const AdminPage = () => {
         variant="scrollable"
         scrollButtons="auto"
       >
-        <Tab label="Players" icon={<PersonAddIcon />} />
+        <Tab label="Players" icon={<PersonAddIcon fontSize="small" />} />
+        <Tab label="Seasons" icon={<EventAvailableIcon fontSize="small" />} />
         <Tab
           label={
             <div className="flex flex-col gap-1 items-center">
               <Badge badgeContent={requests.length} color="primary">
-                <NotificationsActiveIcon />
+                <NotificationsActiveIcon fontSize="small" />
               </Badge>
               <div className="text-nowrap">Admin Requests</div>
             </div>
           }
         />
-        <Tab label="Settings" icon={<SettingsIcon />} />
+        <Tab label="Settings" icon={<SettingsIcon fontSize="small" />} />
       </Tabs>
 
-      {activeTab === 2 && (
+      {activeTab === 3 && (
         <TeamSettingsTab
           team={team}
           onTeamUpdated={handleTeamUpdated}
           setSnackbarMessage={setSnackbarMessage}
           setSnackbarOpen={setSnackbarOpen}
+          isAdmin={isAdmin}
+          ownerName={ownerName}
         />
       )}
 
-      {activeTab === 1 && (
+      {activeTab === 2 && (
         <PendingRequestsTab
-          teamId={teamId}
+          team={team}
           requests={requests}
           onRequestsUpdated={handleRequestsUpdated}
           setSnackbarMessage={setSnackbarMessage}
           setSnackbarOpen={setSnackbarOpen}
+          isAdmin={isAdmin}
+          ownerName={ownerName}
         />
       )}
 
       {activeTab === 0 && (
         <TeamPlayersTab
-          teamId={teamId}
+          team={team}
           teamPlayers={teamPlayers}
           onPlayersUpdated={handlePlayersUpdated}
           setSnackbarMessage={setSnackbarMessage}
           setSnackbarOpen={setSnackbarOpen}
+          isAdmin={isAdmin}
+          ownerName={ownerName}
+        />
+      )}
+
+      {activeTab === 1 && (
+        <TeamSeasonsManager
+          team={team}
+          isAdmin={isAdmin}
+          ownerName={ownerName}
         />
       )}
 

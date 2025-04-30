@@ -16,9 +16,15 @@ import {
 
 type IndividualTeamStatsProps = {
   playerStats: PlayerTeamType;
+  currentSeason: boolean;
+  selectedSeasonNo: number | undefined;
 };
 
-const IndividualTeamStats = ({ playerStats }: IndividualTeamStatsProps) => {
+const IndividualTeamStats = ({
+  playerStats,
+  currentSeason,
+  selectedSeasonNo,
+}: IndividualTeamStatsProps) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === "dark";
 
@@ -68,7 +74,7 @@ const IndividualTeamStats = ({ playerStats }: IndividualTeamStatsProps) => {
                   </TableCell>
                   <TableCell align="center">
                     <Typography variant="body1" fontWeight={"bold"}>
-                      Streak
+                      {currentSeason ? "Streak" : "Season"}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -86,30 +92,32 @@ const IndividualTeamStats = ({ playerStats }: IndividualTeamStatsProps) => {
                       <Typography variant="body1" fontWeight={"bold"}>
                         {playerStats.elo}
                       </Typography>
-                      <div className={`flex items-center`}>
-                        {playerStats.elo_change > 0 ? (
-                          <ArrowDropUpIcon color="success" fontSize="small" />
-                        ) : playerStats.elo_change < 0 ? (
-                          <ArrowDropDownIcon color="error" fontSize="small" />
-                        ) : (
-                          <ArrowRightIcon color="disabled" fontSize="small" />
-                        )}
-                        <Typography
-                          variant="subtitle2"
-                          fontStyle={"italic"}
-                          color={
-                            playerStats.elo_change > 0
-                              ? "success"
-                              : playerStats.elo_change < 0
-                              ? "error"
-                              : "textDisabled"
-                          }
-                        >
-                          {playerStats.elo_change < 0
-                            ? playerStats.elo_change * -1
-                            : playerStats.elo_change}
-                        </Typography>
-                      </div>
+                      {currentSeason && (
+                        <div className={`flex items-center`}>
+                          {playerStats.elo_change > 0 ? (
+                            <ArrowDropUpIcon color="success" fontSize="small" />
+                          ) : playerStats.elo_change < 0 ? (
+                            <ArrowDropDownIcon color="error" fontSize="small" />
+                          ) : (
+                            <ArrowRightIcon color="disabled" fontSize="small" />
+                          )}
+                          <Typography
+                            variant="subtitle2"
+                            fontStyle={"italic"}
+                            color={
+                              playerStats.elo_change > 0
+                                ? "success"
+                                : playerStats.elo_change < 0
+                                ? "error"
+                                : "textDisabled"
+                            }
+                          >
+                            {playerStats.elo_change < 0
+                              ? playerStats.elo_change * -1
+                              : playerStats.elo_change}
+                          </Typography>
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell align="center">
@@ -141,10 +149,16 @@ const IndividualTeamStats = ({ playerStats }: IndividualTeamStatsProps) => {
                       <Typography color="success" fontWeight={"bold"}>
                         W{playerStats.win_streak}
                       </Typography>
-                    ) : (
+                    ) : playerStats.loss_streak > 0 ? (
                       <Typography color="error" fontWeight={"bold"}>
                         L{playerStats.loss_streak}
                       </Typography>
+                    ) : !currentSeason && selectedSeasonNo ? (
+                      <Typography color="textSecondary" fontWeight={"bold"}>
+                        S{selectedSeasonNo}
+                      </Typography>
+                    ) : (
+                      <Typography color="textSecondary">--</Typography>
                     )}
                   </TableCell>
                 </TableRow>

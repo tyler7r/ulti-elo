@@ -102,6 +102,7 @@ const Game = ({ game, playerId }: GameProps) => {
               alignItems: { xs: "start", sm: "center" },
               justifyContent: "center",
               gap: { xs: 1, sm: 2 },
+              width: "100%",
             }}
           >
             <Box
@@ -111,7 +112,6 @@ const Game = ({ game, playerId }: GameProps) => {
                 alignItems: "center",
                 gap: 1,
                 width: { xs: "100%", md: "auto" }, // Ensure full width on mobile for alignment
-                justifyContent: { xs: "center", md: "flex-start" },
                 // Center on mobile, left on desktop
               }}
             >

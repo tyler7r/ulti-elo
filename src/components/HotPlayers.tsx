@@ -31,24 +31,23 @@ const HotPlayers = ({ hotPlayers }: HotPlayersProps) => {
       className="w-full"
       sx={{
         borderRadius: "4px",
-
-        marginBottom: theme.spacing(2),
       }}
     >
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
-          padding: theme.spacing(1.5), // Slightly smaller padding
+          mb: 1,
+          // padding: theme.spacing(1.5), // Slightly smaller padding
         }}
       >
         <WhatshotIcon color="warning" sx={{ mr: 1 }} /> {/* Smaller icon */}
         <Typography variant="h6" fontWeight="bold">
           Hottest Players
         </Typography>
-        <WhatshotIcon color="warning" sx={{ ml: 1 }} />{" "}
+        <WhatshotIcon color="warning" sx={{ ml: 1 }} />
       </Box>
-      <Box sx={{ padding: theme.spacing(1.0) }}>
+      <Box>
         {hotPlayers.map((player) => {
           const rank = getRank(player.elo);
           return (

@@ -1,9 +1,10 @@
 import Leaderboard from "@/components/Leaderboard";
+import { Box } from "@mui/material";
 
 export default function HomePage() {
   return (
-    <div>
+    <Box p={2} width={"100%"}>
       <Leaderboard />
-    </div>
+    </Box>
   );
 }
