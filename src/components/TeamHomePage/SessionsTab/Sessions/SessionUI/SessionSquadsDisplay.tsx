@@ -199,7 +199,6 @@ const SessionSquadsDisplay = ({
           session_id: sessionId,
           team_id: teamId,
           session_round: roundNumber, // Assign round number
-          active: true,
         }));
         const { error: squadInsertError } = await supabase
           .from("squads")
