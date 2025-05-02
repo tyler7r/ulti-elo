@@ -1,8 +1,7 @@
 import { getGameHistory } from "@/lib/getGameHistory";
 import { GameHistoryType } from "@/lib/types";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
-import KeyboardDoubleArrowDownIcon from "@mui/icons-material/KeyboardDoubleArrowDown";
-import { Box, Fab, Typography } from "@mui/material";
+import { Box, CircularProgress, Fab, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import Game from "./Game";
@@ -101,16 +100,33 @@ const GameHistory = ({
           next={() => fetchGames(page)} // Function to fetch more data
           hasMore={hasMore} // Whether more data is available
           loader={
-            <div className="flex justify-center items-center mt-2 font-bold text-sm">
-              <KeyboardDoubleArrowDownIcon fontSize="small" color="secondary" />
-              <div>Scroll for more games</div>
-              <KeyboardDoubleArrowDownIcon fontSize="small" color="secondary" />
-            </div>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 1,
+                my: 2,
+              }}
+            >
+              <CircularProgress size={20} />
+              <Typography variant="caption" color="text.disabled">
+                Loading more games...
+              </Typography>
+            </Box>
           } // Loader that appears while fetching
           endMessage={
-            <p className="flex justify-center items-center mt-2 font-bold text-sm">
-              No more games
-            </p>
+            <Typography
+              variant="caption"
+              sx={{
+                display: "block",
+                textAlign: "center",
+                color: "text.disabled",
+                my: 2,
+              }}
+            >
+              — End of Game History —
+            </Typography>
           } // Message when no more data is available
           scrollThreshold={0.9} // When to trigger loading more data (90% scroll)
         >

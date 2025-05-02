@@ -295,7 +295,7 @@ const RecordScoreModal = ({
                   variant="outlined"
                   aria-label="game type button group"
                   fullWidth
-                  sx={{ marginTop: 1 }}
+                  sx={{ marginTop: 1, gap: 0.5 }}
                 >
                   <Button
                     onClick={() => handleWeightChange("casual")}
@@ -310,7 +310,7 @@ const RecordScoreModal = ({
                     size="small"
                     sx={{ fontWeight: "bold" }}
                   >
-                    0.75x
+                    Casual
                   </Button>
                   <Button
                     onClick={() => handleWeightChange("standard")}
@@ -325,7 +325,7 @@ const RecordScoreModal = ({
                     size="small"
                     sx={{ fontWeight: "bold" }}
                   >
-                    1x
+                    Standard
                   </Button>
                   <Button
                     onClick={() => handleWeightChange("competitive")}
@@ -342,7 +342,7 @@ const RecordScoreModal = ({
                     size="small"
                     sx={{ fontWeight: "bold" }}
                   >
-                    1.25x
+                    Competitive
                   </Button>
                 </ButtonGroup>
               </FormControl>

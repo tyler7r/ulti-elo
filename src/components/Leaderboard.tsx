@@ -24,6 +24,7 @@ import {
   TableHead,
   TableRow,
   TableSortLabel,
+  Tooltip,
   Typography,
   useTheme,
 } from "@mui/material";
@@ -57,6 +58,7 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
   const router = useRouter();
 
   const theme = useTheme();
+  const stickyCellBackground = theme.palette.background.paper;
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -236,7 +238,6 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
       {players.length > 0 ? (
         <Paper
           sx={{
-            maxWidth: "100%",
             overflowX: "auto",
             width: "100%",
             WebkitOverflowScrolling: "touch",
@@ -244,19 +245,30 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
         >
           <TableContainer
             component={Paper}
+            elevation={0}
             sx={{ maxHeight: 750, width: "100%" }}
           >
             <Table stickyHeader>
               <TableHead>
-                <TableRow>
+                <TableRow
+                  sx={{
+                    "& .MuiTableCell-head": {
+                      backgroundColor: theme.palette.background.default, // Or another header color
+                    },
+                  }}
+                >
                   <TableCell
                     align="left"
                     sx={{
                       position: "sticky",
                       left: 0,
-                      zIndex: 2,
-
+                      zIndex: 11,
                       fontWeight: "bold",
+                      width: 40,
+                      minWidth: 40,
+                      maxWidth: 40,
+                      backgroundColor: stickyCellBackground,
+                      boxSizing: "border-box",
                     }}
                   >
                     #
@@ -266,9 +278,11 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
                     sx={{
                       position: "sticky",
                       left: 40,
-                      zIndex: 2,
-
+                      zIndex: 11,
                       fontWeight: "bold",
+                      minWidth: 120,
+                      backgroundColor: stickyCellBackground,
+                      boxSizing: "border-box",
                     }}
                   >
                     <TableSortLabel
@@ -353,16 +367,27 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
                   return (
                     <TableRow
                       key={player.pt_id + player.team_id}
-                      sx={{ cursor: "default" }}
+                      hover
+                      sx={{
+                        "&:hover .MuiTableCell-sticky": {
+                          // Ensure hover doesn't change sticky bg unintentionally
+                          backgroundColor: stickyCellBackground,
+                        },
+                      }}
                     >
                       {/* Rank Column */}
                       <TableCell
                         sx={{
                           position: "sticky",
                           left: 0,
-                          zIndex: 1,
+                          zIndex: 10,
                           background: theme.palette.background.paper,
                           fontWeight: "bold",
+                          width: 40,
+                          minWidth: 40,
+                          maxWidth: 40,
+                          backgroundColor: stickyCellBackground,
+                          boxSizing: "border-box",
                         }}
                       >
                         {index + 1}
@@ -373,20 +398,34 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
                         sx={{
                           position: "sticky",
                           left: 40,
-                          zIndex: 1,
-                          background: theme.palette.background.paper,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                          whiteSpace: "nowrap",
-                          overflow: "scroll",
-                          textOverflow: "ellipsis",
+                          zIndex: 10,
+                          backgroundColor: stickyCellBackground,
+                          minWidth: 120,
                           cursor: "pointer",
+                          boxSizing: "border-box",
                         }}
                         onClick={() => handlePlayerClick(player.player_id)}
                       >
-                        <span>{rank.icon}</span>
-                        <span>{player.name}</span>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <Box component="span" sx={{ flexShrink: 0 }}>
+                            {rank.icon}
+                          </Box>
+                          <Tooltip title={player.name} placement="top-start">
+                            <Typography
+                              component="span"
+                              variant="body2"
+                              sx={{
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {player.name}
+                            </Typography>
+                          </Tooltip>
+                        </Box>
                       </TableCell>
 
                       {/* Elo Column */}
@@ -465,7 +504,11 @@ const Leaderboard = ({ teamId }: LeaderboardProps) => {
           gap={1}
           justifyContent={"flex-start"}
         >
-          <Typography fontWeight={"bold"} color={"textSecondary"}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontStyle: "italic", px: 1 }}
+          >
             No players have competed in a game during this season!
           </Typography>
           {teamId && (

@@ -1,28 +1,58 @@
-// /lib/getSessions.ts (Create this new file or add to an existing utils file)
-
-import { supabase } from "@/lib/supabase"; // Adjust path as needed
-import { SessionType } from "@/lib/types"; // Adjust path as needed
+// import { supabase } from "@/lib/supabase"; // Adjust path as needed
+import { supabase } from "@/lib/supabase";
+import { SessionTypeWithStats } from "@/lib/types"; // Adjust path as needed
 import { PostgrestError } from "@supabase/supabase-js";
+
+// Define the raw shape returned by Supabase query
+// It's helpful for type safety during mapping
+type RawSessionData = Omit<
+  SessionTypeWithStats,
+  "season_no" | "games_played_count" | "attendees_count"
+> & {
+  seasons: { season_no: number | null } | null; // Join result (can be null if LEFT JOIN implied or no season)
+  games: { count: number }[]; // Count result is always an array
+  session_attendees: { count: number }[]; // Count result is always an array
+};
+
+// Helper function to map raw data to SessionType
+const mapRawDataToSessionType = (rawData: RawSessionData) => {
+  return {
+    // Spread all original fields from the raw session data
+    id: rawData.id,
+    session_date: rawData.session_date,
+    team_id: rawData.team_id,
+    created_at: rawData.created_at,
+    updated_at: rawData.updated_at,
+    title: rawData.title,
+    active: rawData.active,
+    season_id: rawData.season_id,
+
+    // Map the nested/calculated fields
+    season_no: rawData.seasons?.season_no ?? null, // Safely access nested season_no
+    games_played_count: rawData.games?.[0]?.count ?? 0, // Safely access count
+    attendees_count: rawData.session_attendees?.[0]?.count ?? 0, // Safely access count
+  };
+};
 
 type GetSessionsFilter = {
   teamId: string;
-  active?: boolean; // Allow single status or array
+  active?: boolean;
   page?: number;
   limit?: number;
-  excludeId?: string; // Optional: To exclude a specific session ID (e.g., the active one)
+  excludeId?: string;
 };
 
-// Fetches sessions with pagination and status filtering
+// Fetches sessions with pagination, status filtering, and related counts/info
 export const getSessions = async ({
   teamId,
   active,
   page = 1,
-  limit = 10, // Adjust default limit as needed
+  limit = 10,
   excludeId,
 }: GetSessionsFilter): Promise<{
-  sessions: SessionType[] | null;
-  error?: PostgrestError | string; // Allow string errors for custom messages
-  totalCount?: number; // Optional: Total count for the filter
+  sessions: SessionTypeWithStats[] | null;
+  error?: PostgrestError | string;
+  totalCount?: number; // Total count for the primary session filter
 }> => {
   if (!teamId) {
     return { sessions: null, error: "Team ID is required." };
@@ -32,17 +62,23 @@ export const getSessions = async ({
 
   try {
     let query = supabase
-      .from("sessions") // Correct table name 'session'
-      .select("*", { count: "exact" }) // Select all columns and get total count
+      .from("sessions")
+      .select(
+        `
+      *,
+      seasons ( season_no ),
+      games ( count ),
+      session_attendees ( count )
+    `,
+        { count: "exact" }
+      ) // Get total count of sessions matching filter
       .eq("team_id", teamId)
-      .order("session_date", { ascending: false }); // Order by date descending
+      // Order by session creation/update time or explicit session_date if available
+      .order("created_at", { ascending: false }); // Or use 'updated_at' or 'session_date'
 
-    // Apply status filter
-    const act = !!active;
-    if (act) {
+    // Apply active status filter (handle boolean explicitly)
+    if (typeof active === "boolean") {
       query = query.eq("active", active);
-    } else {
-      query = query.eq("active", act);
     }
 
     // Apply exclusion filter
@@ -50,7 +86,7 @@ export const getSessions = async ({
       query = query.neq("id", excludeId);
     }
 
-    // Apply pagination only if limit is positive
+    // Apply pagination
     if (limit > 0) {
       query = query.range(offset, offset + limit - 1);
     }
@@ -63,34 +99,50 @@ export const getSessions = async ({
       return { sessions: null, error: error };
     }
 
+    // Map the raw data to the desired SessionType structure
+    const mappedSessions = data ? data.map(mapRawDataToSessionType) : [];
+
     return {
-      sessions: (data as SessionType[]) ?? [],
+      sessions: mappedSessions,
       error: undefined,
       totalCount: count ?? 0,
     };
   } catch (err) {
     console.error("Unexpected error fetching sessions:", err);
+    // Check if err is an object with a message property
+    const errorMessage =
+      typeof err === "object" && err !== null && "message" in err
+        ? String(err.message)
+        : "An unexpected error occurred.";
     return {
       sessions: null,
-      error: "An unexpected error occurred.",
+      error: errorMessage,
     };
   }
 };
 
-// Specific function to get the single active session for a team
+// Specific function to get the single active session for a team with related counts/info
 export const getActiveSession = async (
   teamId: string
 ): Promise<{
-  session: SessionType | null;
+  session: SessionTypeWithStats | null;
   error?: PostgrestError | string;
 }> => {
   if (!teamId) {
     return { session: null, error: "Team ID is required." };
   }
   try {
+    // Define the select string similar to getSessions
+    const selectString = `
+      *,
+      seasons ( season_no ),
+      games ( count ),
+      session_attendees ( count )
+    `;
+
     const { data, error } = await supabase
       .from("sessions")
-      .select("*")
+      .select(selectString)
       .eq("team_id", teamId)
       .eq("active", true)
       .limit(1)
@@ -100,12 +152,20 @@ export const getActiveSession = async (
       console.error("Error fetching active session:", error);
       return { session: null, error: error };
     }
-    return { session: data as SessionType | null, error: undefined };
+
+    // Map the raw data if found, otherwise return null
+    const mappedSession = data ? mapRawDataToSessionType(data) : null;
+
+    return { session: mappedSession, error: undefined };
   } catch (err) {
     console.error("Unexpected error fetching active session:", err);
+    const errorMessage =
+      typeof err === "object" && err !== null && "message" in err
+        ? String(err.message)
+        : "An unexpected error occurred.";
     return {
       session: null,
-      error: "An unexpected error occurred.",
+      error: errorMessage,
     };
   }
 };

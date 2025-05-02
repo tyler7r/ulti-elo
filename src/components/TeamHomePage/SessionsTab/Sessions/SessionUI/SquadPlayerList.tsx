@@ -49,8 +49,6 @@ const SquadPlayerList = ({
   const isDarkMode = theme.palette.mode === "dark";
 
   const headerBackgroundColor = isDarkMode ? "grey.700" : "grey.300";
-  const rowBackgroundColor = isDarkMode ? "grey.900" : "grey.100";
-  const rowHoverBackgroundColor = isDarkMode ? "grey.800" : "grey.200";
 
   // Navigate to player detail page
   const handlePlayerClick = (playerId: string | undefined) => {
@@ -145,9 +143,7 @@ const SquadPlayerList = ({
                 <TableRow
                   key={rowKey}
                   sx={{
-                    backgroundColor: rowBackgroundColor,
                     "&:last-child td, &:last-child th": { border: 0 },
-                    "&:hover": { backgroundColor: rowHoverBackgroundColor },
                   }}
                 >
                   <TableCell // Player Name Cell

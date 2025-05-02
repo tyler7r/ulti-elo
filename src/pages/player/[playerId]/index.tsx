@@ -238,7 +238,7 @@ const PlayerHomePage = () => {
                 borderRadius: "4px",
                 marginBottom: 2,
                 width: { xs: "100%", sm: "75%", md: "50%" },
-                alignSelf: "center",
+                // alignSelf: "center",
               }}
               elevation={4}
             >

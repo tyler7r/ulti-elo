@@ -247,10 +247,8 @@ const TeamHomePage = () => {
                 size="small"
                 sx={{ ml: "auto" }}
               >
-                {" "}
                 {/* Pushes icon to the right */}
                 <Badge badgeContent={pendingRequests} color="error">
-                  {" "}
                   {/* Changed badge color */}
                   <SettingsIcon />
                 </Badge>
@@ -321,8 +319,7 @@ const TeamHomePage = () => {
         </Box>
 
         {/* Tab Panels */}
-        <Box sx={{ pt: 2 }}>
-          {" "}
+        <Box>
           {/* Add padding top to content area */}
           {/* Panel 0: Leaderboard */}
           <div

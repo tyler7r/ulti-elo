@@ -451,7 +451,11 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
             <InfoOutlinedIcon fontSize="small" />
           </IconButton>
         </div>
-        <ButtonGroup aria-label="game type button group" fullWidth>
+        <ButtonGroup
+          aria-label="game type button group"
+          fullWidth
+          sx={{ gap: 0.5 }}
+        >
           <Button
             onClick={() => handleWeightChange("casual")}
             color={gameWeight === "casual" ? "secondary" : "inherit"}
@@ -459,7 +463,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
             size="small"
             sx={{ fontWeight: "bold" }}
           >
-            0.75x
+            Casual
           </Button>
           <Button
             onClick={() => handleWeightChange("standard")}
@@ -468,7 +472,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
             size="small"
             sx={{ fontWeight: "bold" }}
           >
-            1x
+            Standard
           </Button>
           <Button
             onClick={() => handleWeightChange("competitive")}
@@ -477,7 +481,7 @@ const EditGameForm = ({ gameId, singleGame }: EditGameFormProps) => {
             size="small"
             sx={{ fontWeight: "bold" }}
           >
-            1.25x
+            Competitive
           </Button>
         </ButtonGroup>
       </FormControl>

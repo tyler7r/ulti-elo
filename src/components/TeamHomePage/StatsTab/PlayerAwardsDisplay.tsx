@@ -17,7 +17,8 @@ import {
   ListItemText,
   Paper,
   Typography,
-  useTheme, // Keep useTheme as it's needed for direct color resolution later
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useRouter } from "next/router"; // Use next/router for Pages Router
 import { Fragment, useMemo, useState } from "react";
@@ -81,15 +82,15 @@ export const getAwardDetails = (awardType: AwardType) => {
       };
     case AwardTypes.MOST_WINS:
       return {
-        icon: <EmojiEventsIcon color="primary" sx={{ fontSize: "1.5rem" }} />,
+        icon: <EmojiEventsIcon color="primary" sx={{ fontSize: "1.1rem" }} />,
         title: "Most Wins",
         color: "primary.main", // Keep theme key, resolved later
         heightFactor: 0, // Not applicable
       };
     case AwardTypes.LONGEST_STREAK:
       return {
-        icon: <WhatshotIcon color="error" sx={{ fontSize: "1.5rem" }} />,
-        title: "Longest Win Streak",
+        icon: <WhatshotIcon color="error" sx={{ fontSize: "1.1rem" }} />,
+        title: "Longest Streak",
         color: "error.main", // Keep theme key, resolved later
         heightFactor: 0, // Not applicable
       };
@@ -120,6 +121,8 @@ const SeasonAwardsDisplay = ({
 }: SeasonAwardsDisplayProps) => {
   const theme = useTheme(); // Get theme object for resolving colors later
   const router = useRouter();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const [openAwardDetails, setOpenAwardDetails] = useState<
     Record<string, boolean>
   >({});
@@ -237,16 +240,11 @@ const SeasonAwardsDisplay = ({
 
     let valueText = `${award.award_value}`;
     if (details.title === "Most Wins") valueText += " Wins";
-    else if (details.title === "Longest Win Streak") valueText += " Wins";
+    else if (details.title === "Longest Streak") valueText += " Wins";
     else return null; // Only show value for Wins/Streak
 
     return (
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        fontWeight="500"
-        alignSelf={"center"}
-      >
+      <Typography variant="caption" color="text.secondary" fontWeight="500">
         ({valueText})
       </Typography>
     );
@@ -260,7 +258,7 @@ const SeasonAwardsDisplay = ({
         variant="caption"
         fontWeight="500"
         color="text.secondary"
-        sx={{ mt: 0.5 }}
+        mb={0.5}
       >
         {award.award_value} ELO
       </Typography>
@@ -339,7 +337,6 @@ const SeasonAwardsDisplay = ({
                   }
                   fontWeight="bold"
                   color={cardColor}
-                  // gutterBottom removed for tighter spacing
                 >
                   {details.title}
                 </Typography>
@@ -348,7 +345,6 @@ const SeasonAwardsDisplay = ({
                 {/* Player Name(s) */}
                 <Box sx={{ width: "100%", px: 0.5 }}>
                   {" "}
-                  {/* Added container for width/padding */}
                   {awardsOfType.map((award, index) => (
                     <Fragment key={award.id}>
                       <PlayerNameDisplay
@@ -399,7 +395,8 @@ const SeasonAwardsDisplay = ({
             flexWrap: "wrap",
             justifyContent: "center",
             gap: 1, // Gap between wins/streak cards
-            px: { xs: 1, sm: 0 }, // Add horizontal padding on mobile
+            width: "100%",
+            // px: { xs: 1, sm: 0 }, // Add horizontal padding on mobile
           }}
         >
           {otherAwards.map(({ type, details }) => {
@@ -418,42 +415,45 @@ const SeasonAwardsDisplay = ({
                 key={type}
                 variant="outlined" // Use outlined for less emphasis
                 sx={{
-                  p: 1.0,
+                  p: isMobile ? 1 : 2,
                   borderRadius: "8px", // Slightly larger radius
                   display: "flex",
                   flexDirection: "column",
-                  // --- Width: Full width on xs, fixed/max on sm+ ---
-                  width: { xs: "100%", sm: "400px" }, // Takes full width on mobile
-                  maxWidth: "100%", // Ensure it doesn't overflow container
-                  // Use resolved cardColor directly with alpha
+                  alignItems: "center",
+                  flexGrow: 1,
+                  maxWidth: "200px", // Ensure it doesn't overflow container
                   borderColor: alpha(cardColor, 0.6), // Slightly stronger border
                   borderWidth: "2px",
+                  bgcolor: alpha(cardColor, 0.08),
                 }}
               >
                 {/* Card Header */}
                 <Box
                   display="flex"
                   alignItems="center"
-                  justifyContent="space-between"
+                  justifyContent={"center"}
                   width="100%"
-                  sx={{ minHeight: "36px" }} // Ensure consistent header height
                 >
                   <Box
                     display="flex"
                     alignItems="center"
-                    gap={1}
+                    width={"100%"}
+                    justifyContent={"center"}
+                    gap={0.5}
                     flexWrap="nowrap"
                     overflow="hidden"
                   >
                     {/* Icon is already colored via color prop */}
-                    {details.icon}
-                    <Typography variant="body1" fontWeight="bold" noWrap>
+                    <Box>{details.icon}</Box>
+                    <Typography
+                      variant="body1"
+                      fontWeight="bold"
+                      noWrap
+                      color={cardColor}
+                    >
                       {details.title}
                     </Typography>
-                    <AwardValueDisplay
-                      award={awardsOfType[0]}
-                      details={details}
-                    />
+                    <Box>{details.icon}</Box>
                   </Box>
                   {isTie && (
                     <IconButton
@@ -466,10 +466,11 @@ const SeasonAwardsDisplay = ({
                     </IconButton>
                   )}
                 </Box>
+                <AwardValueDisplay award={awardsOfType[0]} details={details} />
 
                 {/* Winner Display */}
                 {!isTie && (
-                  <Box mt={1}>
+                  <Box>
                     <PlayerNameDisplay
                       player={awardsOfType[0].player}
                       variant="body2"

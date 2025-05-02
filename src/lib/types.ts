@@ -256,6 +256,12 @@ export type SessionType = {
   season_id: string | null;
 };
 
+export type SessionTypeWithStats = SessionType & {
+  season_no: number | null;
+  games_played_count: number;
+  attendees_count: number;
+};
+
 export type SeasonType = {
   id: string;
   team_id: string;

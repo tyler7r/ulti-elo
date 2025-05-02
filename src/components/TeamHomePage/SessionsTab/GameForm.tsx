@@ -373,7 +373,7 @@ const GameForm = ({
                     size="small"
                     sx={{ fontWeight: "bold" }}
                   >
-                    0.75x
+                    Casual
                   </Button>
                   <Button
                     onClick={() => handleWeightChange("standard")}
@@ -388,7 +388,7 @@ const GameForm = ({
                     size="small"
                     sx={{ fontWeight: "bold" }}
                   >
-                    1x
+                    Standard
                   </Button>
                   <Button
                     onClick={() => handleWeightChange("competitive")}
@@ -405,7 +405,7 @@ const GameForm = ({
                     size="small"
                     sx={{ fontWeight: "bold" }}
                   >
-                    1.25x
+                    Competitive
                   </Button>
                 </ButtonGroup>
               </FormControl>
