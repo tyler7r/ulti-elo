@@ -33,6 +33,7 @@ const InfoModal: React.FC = () => {
         aria-label="Info"
         color="secondary"
         size="small"
+        sx={{ padding: 0 }}
       >
         <InfoIcon fontSize="small" />
       </IconButton>

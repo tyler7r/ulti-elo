@@ -22,19 +22,9 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 // Import child components
 import GameHistory from "@/components/GameHistory/GameHistory"; // Adjust path
 import PlayerTeamStats from "@/components/PlayerHomePage/PlayerTeamStats"; // Adjust path
+import FavoriteButton from "@/components/Utils/FavoriteButton";
+import LoginFirstWarning from "@/components/Utils/LoginFirstWarning";
 import WhatshotIcon from "@mui/icons-material/Whatshot"; // Import a hot icon
-
-// Define type for Awards (can be moved to types file)
-// type PlayerAward = {
-//   id: string;
-//   pt_id: string; // Awards might be linked to player_teams (pt_id) instead of player_id directly
-//   player_id: string; // Or directly to player_id
-//   season_id: string;
-//   award_type: "highest_elo" | "most_wins" | "longest_streak"; // Add more types later
-//   award_value?: string | number;
-//   awarded_at: string;
-//   season?: { season_no: number }; // Optional joined data
-// };
 
 function a11yProps(index: number) {
   return {
@@ -59,6 +49,7 @@ const PlayerHomePage = () => {
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState<string | null>(null);
   const [openTeamId, setOpenTeamId] = useState<string | null>(null);
+  const [isLoginWarningOpen, setIsLoginWarningOpen] = useState(false);
 
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
@@ -164,16 +155,6 @@ const PlayerHomePage = () => {
     return { totalWins, totalLosses, winPercentage, peakElo, longestStreak };
   }, [currentTeamsData, seasonHistoryData]);
 
-  // // --- Award Calculation ---
-  // const awardCounts = useMemo(() => {
-  //   // ... (calculation logic remains the same) ...
-  //   const counts: { [key in PlayerAward["award_type"]]?: number } = {};
-  //   awards.forEach((award) => {
-  //     counts[award.award_type] = (counts[award.award_type] ?? 0) + 1;
-  //   });
-  //   return counts;
-  // }, [awards]);
-
   // --- Handlers ---
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -201,18 +182,16 @@ const PlayerHomePage = () => {
 
   return (
     <Box sx={{ width: "100%" }}>
-      <Box
-        display={"flex"}
-        flexDirection={"column"}
-        p={1}
-        px={2}
-        pt={2}
-        justifyContent={"center"}
-        gap={1}
-      >
+      <Box display={"flex"} p={1} px={2} pt={2} alignItems={"center"} gap={1}>
         <Typography variant={isSmallScreen ? "h4" : "h3"} fontWeight={"bold"}>
           {playerData.name}
         </Typography>
+        <FavoriteButton
+          itemId={playerData.id}
+          itemType="player"
+          itemName={playerData.name}
+          onLoginRequired={() => setIsLoginWarningOpen(true)}
+        />
       </Box>
 
       {/* Tabs */}
@@ -238,7 +217,6 @@ const PlayerHomePage = () => {
                 borderRadius: "4px",
                 marginBottom: 2,
                 width: { xs: "100%", sm: "75%", md: "50%" },
-                // alignSelf: "center",
               }}
               elevation={4}
             >
@@ -360,6 +338,11 @@ const PlayerHomePage = () => {
           />
         )}
       </Box>
+      <LoginFirstWarning
+        open={isLoginWarningOpen}
+        handleClose={() => setIsLoginWarningOpen(false)}
+        requestedAction="favorite this player"
+      />
     </Box>
   );
 };
