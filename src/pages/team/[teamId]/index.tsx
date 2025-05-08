@@ -1,12 +1,13 @@
 import GameHistory from "@/components/GameHistory/GameHistory";
 import SessionsTab from "@/components/TeamHomePage/SessionsTab";
 import TeamLeaderboardTab from "@/components/TeamHomePage/StatsTab/TeamLeaderboard";
+import FavoriteButton from "@/components/Utils/FavoriteButton";
+import LoginFirstWarning from "@/components/Utils/LoginFirstWarning";
 import NoLogoAvatar from "@/components/Utils/NoLogoAvatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { TeamType } from "@/lib/types";
 import CloseIcon from "@mui/icons-material/Close";
-// import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord"; // Keep this import if needed elsewhere, otherwise remove
 import SettingsIcon from "@mui/icons-material/Settings";
 import {
   Alert,
@@ -38,6 +39,7 @@ const TeamHomePage = () => {
   }>({ message: null, severity: "error" });
   const [ownerName, setOwnerName] = useState<string | undefined>(undefined);
   const [activeSession, setActiveSession] = useState(false);
+  const [isLoginWarningOpen, setIsLoginWarningOpen] = useState(false);
 
   const router = useRouter();
   const teamId = router.query.teamId as string;
@@ -98,19 +100,6 @@ const TeamHomePage = () => {
       void fetchTeam(teamId);
       void fetchPendingRequests();
       void fetchActiveSession();
-
-      // Optional: Set up a subscription for active sessions if real-time updates are needed
-      // const sessionSubscription = supabase.channel(`active-session-${teamId}`)
-      //   .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: `team_id=eq.${teamId}` }, payload => {
-      //     console.log('Session change received!', payload)
-      //     // Re-fetch active session status on any change for simplicity
-      //     void fetchActiveSession();
-      //   })
-      //   .subscribe()
-
-      // return () => {
-      //   supabase.removeChannel(sessionSubscription);
-      // }
     }
   }, [teamId, userRole, fetchPendingRequests, fetchActiveSession]);
 
@@ -241,6 +230,12 @@ const TeamHomePage = () => {
             >
               {team.name}
             </Typography>
+            <FavoriteButton
+              itemId={team.id}
+              itemType="team"
+              itemName={team.name}
+              onLoginRequired={() => setIsLoginWarningOpen(true)}
+            />
             {user && userRole && (
               <IconButton
                 onClick={handleNavigateToAdmin}
@@ -436,6 +431,11 @@ const TeamHomePage = () => {
             </Box>
           </Box>
         </Modal>
+        <LoginFirstWarning
+          open={isLoginWarningOpen}
+          handleClose={() => setIsLoginWarningOpen(false)}
+          requestedAction="favorite this team"
+        />
       </Box>
     )
   );
