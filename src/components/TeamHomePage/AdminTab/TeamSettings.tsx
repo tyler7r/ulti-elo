@@ -4,7 +4,9 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { Box, Button, IconButton, TextField, Typography } from "@mui/material";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import ConfirmDeleteModal from "./ConfirmDeleteModal"; // NEW IMPORT
 import NoAccessPage from "./NoAccess";
 
 interface TeamSettingsTabProps {
@@ -24,6 +26,7 @@ const TeamSettingsTab = ({
   isAdmin,
   ownerName,
 }: TeamSettingsTabProps) => {
+  const router = useRouter();
   const [teamName, setTeamName] = useState(team?.name || "");
   const [initialTeamName, setInitialTeamName] = useState(team?.name || "");
   const [initialLogoUrl, setInitialLogoUrl] = useState(team?.logo_url || null);
@@ -32,6 +35,8 @@ const TeamSettingsTab = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [disabled, setDisabled] = useState(true);
   const [isRemovingLogo, setIsRemovingLogo] = useState(false);
+  // State for delete confirmation modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     setTeamName(team?.name || "");
@@ -41,6 +46,8 @@ const TeamSettingsTab = ({
     setLogoPreviewUrl(null);
     setIsRemovingLogo(false);
   }, [team]);
+
+  // ... (Logo and Save functions remain the same) ...
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!isAdmin) return;
@@ -202,6 +209,38 @@ const TeamSettingsTab = ({
     setDisabled(isSaveDisabled);
   }, [isSaveDisabled]);
 
+  // --- Delete Logic Updated ---
+
+  const handleOpenDeleteModal = () => {
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+  };
+
+  // This function is now passed to the modal as onConfirmDelete
+  const handleDeleteTeam = async () => {
+    if (!team?.id || !isAdmin) return;
+
+    const { error } = await supabase.from("teams").delete().eq("id", team.id);
+
+    if (error) {
+      console.error("Error deleting team:", error.message);
+      setSnackbarMessage(`Error deleting team: ${error.message}`);
+      setSnackbarOpen(true);
+    } else {
+      setSnackbarMessage(`Team '${team.name}' successfully deleted.`);
+      setSnackbarOpen(true);
+      void router.push("/");
+    }
+    // The modal handles its own close and state reset,
+    // but a final close here ensures it is closed after success/error.
+    handleCloseDeleteModal();
+  };
+
+  // --- End Delete Logic ---
+
   return !isAdmin ? (
     <NoAccessPage ownerName={ownerName} isAdmin={isAdmin} team={team} />
   ) : (
@@ -334,6 +373,43 @@ const TeamSettingsTab = ({
           </Button>
         </Box>
       </Box>
+
+      {/* --- Delete Team Section --- */}
+      <Box
+        mt={4}
+        p={2}
+        border={1}
+        borderColor="error.main"
+        borderRadius={1}
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Typography variant="h6" color="error">
+          Danger Zone
+        </Typography>
+        <Button
+          variant="outlined"
+          color="error"
+          startIcon={<DeleteIcon />}
+          onClick={handleOpenDeleteModal}
+          size="small"
+        >
+          Delete Team
+        </Button>
+      </Box>
+      {/* --- End Delete Team Section --- */}
+
+      {/* --- Confirm Delete Modal Component --- */}
+      <ConfirmDeleteModal
+        open={isDeleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        teamName={team.name}
+        onConfirmDelete={handleDeleteTeam}
+      />
+      {/* --- End Confirm Delete Modal Component --- */}
     </Box>
   );
 };
