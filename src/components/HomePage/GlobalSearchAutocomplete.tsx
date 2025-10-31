@@ -39,14 +39,9 @@ const GlobalSearchAutocomplete = ({
   const debouncedSearchTerm = useDebounce(inputValue, 300);
   const router = useRouter();
 
-  const fetchResults = useCallback(async (searchTerm: string) => {
-    if (searchTerm.length < 2) {
-      // Only search if term is long enough
-      setOptions([]);
-      setLoading(false);
-      return;
-    }
+  const MIN_CHARS = 2; // Define the minimum characters needed
 
+  const fetchResults = useCallback(async (searchTerm: string) => {
     setLoading(true);
     setOptions([]); // Clear previous options immediately
 
@@ -97,8 +92,15 @@ const GlobalSearchAutocomplete = ({
     }
   }, []); // No dependencies other than supabase client (implicit)
 
+  // 1. Refactor useEffect to only run search when input length is >= MIN_CHARS
   useEffect(() => {
-    fetchResults(debouncedSearchTerm);
+    if (debouncedSearchTerm.length >= MIN_CHARS) {
+      fetchResults(debouncedSearchTerm);
+    } else {
+      // Clear results and stop loading if input is too short
+      setOptions([]);
+      setLoading(false);
+    }
   }, [debouncedSearchTerm, fetchResults]);
 
   const handleOptionSelected = (
@@ -117,6 +119,12 @@ const GlobalSearchAutocomplete = ({
 
   const memoizedOptions = useMemo(() => options, [options]);
 
+  // Determine the custom message based on input length
+  const customNoOptionsText =
+    inputValue.length < MIN_CHARS
+      ? `Start typing at least ${MIN_CHARS} characters to search for teams or players.`
+      : "No results found.";
+
   return (
     <Autocomplete
       id="global-search-autocomplete"
@@ -127,6 +135,8 @@ const GlobalSearchAutocomplete = ({
       }}
       options={memoizedOptions}
       loading={loading}
+      // 2. Add the custom placeholder text when no options are shown
+      noOptionsText={customNoOptionsText}
       // Key for React list rendering - uses the unique ID we created
       getOptionKey={(option) => option.id}
       // How to get the text label for each option

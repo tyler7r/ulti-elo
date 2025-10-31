@@ -1,5 +1,4 @@
 // /components/Sessions/SessionAttendeesList.tsx (Adjust path as needed)
-
 import { supabase } from "@/lib/supabase"; // Adjust path
 import { PlayerTeamType, SquadWithPlayerDetails } from "@/lib/types"; // Adjust path
 import CancelIcon from "@mui/icons-material/Cancel";
